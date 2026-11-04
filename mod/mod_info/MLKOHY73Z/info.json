@@ -1,0 +1,151 @@
+{
+    "attachments": [
+        {
+            "data_filename": "1328854.png",
+            "original_filename": "Screenshot2026-08-19130512.png",
+            "thumb_filename": "thumbs\/1328854.jpg"
+        }
+    ],
+    "resource_id": 39155,
+    "current_version_id": 71863,
+    "download_count": 0,
+    "resource_version_id": 73695,
+    "version_string": "1.04",
+    "last_update": 1787218828,
+    "rating_avg": 4.55556,
+    "rating_count": 0,
+    "rating_sum": 0,
+    "resource_category_id": 10,
+    "resource_date": 1787218828,
+    "review_count": 27,
+    "tag_line": "See what injuries the driver would have suffered in your crash",
+    "update_count": 0,
+    "path": "MLKOHY73Z\/71863\/",
+    "filename": "injury-mod-pro.zip",
+    "title": "Injury Mod",
+    "user_id": 823998,
+    "username": "Pityxa",
+    "tagid": "MLKOHY73Z",
+    "message": "BeamNG tells you the engine's broken and the axle snapped. This tells you what\nhappened to the person inside.\n\nAfter a crash you get a list of actual injuries \u2014 \"Skull fractured\", \"You broke\nseveral ribs\", \"Internal bleeding\" \u2014 with a body figure showing where you were\nhurt and your chance of surviving.                                                                                                                                                                                                                              [ATTACH]1328854[\/ATTACH]  \n \n\nHOW IT WORKS:confused:\n\nThe mod reads the acceleration your car experiences during a crash, at the\ngame's full physics rate of 2000 samples per second, and runs it through\npublished crash-test research \u2014 the same kind used to give real cars their\nsafety ratings.\n\nFEATURES:cool:\n- Named injuries by body region, with severity and probability\n- Body figure colour-coded by injury severity\n- Survival chance, and a plain-language verdict\n- Seatbelt toggle: belted with airbag, belted only, or unbelted\n- Realistic mode: blackouts, blurred vision, muffled hearing and tinnitus,\n  degraded vehicle control, and bleeding out over time\n- Med kit \u2014 one per life, stops bleeding but doesn't mend bones\n- Multi-impact crashes are reported per impact, in order\n\n\nHOW TO USE:D\n\nInstall the zip, then add the app: pause menu \u2192 HUD Apps \u2192 edit your layout \u2192\nadd \"Crash Injury\" and drag it where you want it.\n\nRealistic mode is off by default. Turn it on with the toggle in the app.\n\n\nHONEST LIMITATIONSo_O\n\n - Survival percentage is an estimate. Real survival depends on factors no\n  simulation can see.\n\nFeedback welcome, especially on whether the injuries feel right. Keep in mid this is the first version of the mod so you may have bugs :p",
+    "category_title": "",
+    "prefix_title": "Experimental",
+    "via": "packed by repo on Mon, 19 Oct 2026 10:06:40 GMT",
+    "hashes": [
+        [
+            "lua\/vehicle\/extensions\/auto\/crashInjuryProCapture.lua",
+            "6eed36cd19c3c34f"
+        ],
+        [
+            "lua\/vehicle\/extensions\/auto\/crashInjuryProDepthProbe.lua",
+            "5c20355f138dee35"
+        ],
+        [
+            "lua\/vehicle\/controller\/crashInjuryProRealisticControl.lua",
+            "35ec370b468bd29f"
+        ],
+        [
+            "lua\/ge\/extensions\/core\/cameraModes\/crashInjuryProShake.lua",
+            "b431b22f33f0d528"
+        ],
+        [
+            "lua\/ge\/extensions\/crashInjuryPro.lua",
+            "9c61751567af02a7"
+        ],
+        [
+            "vehicles\/occupantPro\/info.json",
+            "bf87560603e8db5a"
+        ],
+        [
+            "vehicles\/occupantPro\/occupantPro.jbeam",
+            "04e8b50e398846ff"
+        ],
+        [
+            "vehicles\/etk800\/crashInjuryProOccupant.jbeam",
+            "ec4f68f2d9859c02"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryProStats\/app.json",
+            "6232df35e614e25e"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryProStats\/app.html",
+            "09b674b187869a81"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryProStats\/app.js",
+            "41033c6e41c82c46"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/app.json",
+            "a51d017f0c3b2e85"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/app.html",
+            "f6038d791da95a86"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/app.js",
+            "0c95896de5a2cf67"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/uk.js",
+            "a75e06ea39454744"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/es.js",
+            "a0eeece258c90a46"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/pt.js",
+            "c5397c6405e0b8de"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/ru.js",
+            "bfc4230db512e56c"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/fr.js",
+            "1a8626e8d7e4fd74"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/zh.js",
+            "7c4ee27fb3ec9c03"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/de.js",
+            "8983994fefe2e79d"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/pl.js",
+            "dcd51205204357ce"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/ja.js",
+            "2eb1768be90e1bb2"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/lang\/tr.js",
+            "119bdb4414971e1d"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/pipelineBundle.js",
+            "af6d66d4520e774d"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/freeBundle.js",
+            "f8ca78106e8910f1"
+        ],
+        [
+            "ui\/modules\/apps\/CrashInjuryPro\/i18n.js",
+            "603fbf2f9b8dcdaf"
+        ],
+        [
+            "scripts\/injury-mod-pro\/modScript.lua",
+            "d8cb505961bef34a"
+        ],
+        [
+            "art\/sound\/crashInjuryProTinnitus.wav",
+            "6ab27cde8446fe2d"
+        ]
+    ]
+}

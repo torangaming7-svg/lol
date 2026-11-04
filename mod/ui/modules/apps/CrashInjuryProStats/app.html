@@ -1,0 +1,285 @@
+<style>
+  .cip-stats-app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    background: transparent;
+    overflow: hidden;
+    font-family: Verdana, 'Segoe UI', Tahoma, Arial, sans-serif;
+  }
+  .cip-stats-body {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4em;
+    max-width: 100%;
+  }
+  .cip-stats-sub {
+    display: block;
+    font-size: 0.74em;
+    font-weight: 400;
+    opacity: 0.8;
+    text-transform: none;
+    line-height: 1.25;
+  }
+  .cip-stats-app * { box-sizing: border-box; }
+
+  .cip-stats-line {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    column-gap: 0.8em;
+    row-gap: 0.1em;
+    max-width: 100%;
+    line-height: 1.2;
+  }
+
+  .cip-stats-survival-line { cursor: pointer; user-select: none; }
+  .cip-stats-line.cip-stats-line-seats { align-items: center; }
+  .cip-stats-seats {
+    margin-left: auto;
+    display: inline-grid;
+    grid-auto-columns: auto;
+    column-gap: 0.7em;
+    row-gap: 0.15em;
+    text-align: center;
+  }
+  .cip-stats-seat { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+  .cip-stats-seat-name { font-size: 0.55em; font-weight: 400; opacity: 0.8; white-space: nowrap; }
+  .cip-stats-seat-pct { font-size: 0.85em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .cip-stats-label { white-space: nowrap; }
+
+  .cip-stats-value { margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+  .cip-stats-value.cip-stats-value-wrap {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .cip-stats-settings {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 10;
+    min-width: 13em;
+    max-width: calc(100% - 8px);
+    background: #0b0d10;
+    border: 1px solid #2a2e35;
+    border-radius: 0.35em;
+    padding: 0.5em 0.6em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+
+    font-size: 13px;
+
+    font-weight: 400;
+    text-transform: none;
+    text-shadow: none;
+    color: #d7dade;
+    cursor: default;
+
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #4a4f58 rgba(255, 255, 255, 0.06);
+  }
+  .cip-stats-settings::-webkit-scrollbar { width: 10px; }
+  .cip-stats-settings::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.06); border-radius: 5px; }
+  .cip-stats-settings::-webkit-scrollbar-thumb { background: #4a4f58; border-radius: 5px; }
+  .cip-stats-settings::-webkit-scrollbar-thumb:hover { background: #6a707b; }
+  .cip-stats-settings-label {
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9aa0a6;
+  }
+  .cip-stats-settings-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cip-stats-settings-row input[type="checkbox"] {
+    width: 1em;
+    height: 1em;
+    accent-color: #8fb3d9;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .cip-stats-settings-row input[type="checkbox"]:disabled { cursor: default; }
+  .cip-stats-settings-row.cip-stats-settings-disabled { color: #7f848c; }
+  .cip-stats-settings-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .cip-stats-settings-slider-row input[type="range"] {
+    flex: 1 1 auto;
+    accent-color: #8fb3d9;
+    cursor: pointer;
+  }
+
+  .cip-stats-color-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+  .cip-stats-color-swatch {
+    width: 1.6em;
+    height: 1.6em;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    border: 2px solid #3a3e46;
+    padding: 0;
+    cursor: pointer;
+  }
+  .cip-stats-color-swatch:hover { border-color: #6a707b; }
+  .cip-stats-color-swatch.cip-active { border-color: #8fb3d9; }
+
+  .cip-stats-color-hex-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: #14161a;
+    color: #d7dade;
+    border: 1px solid #4a4f58;
+    border-radius: 0.3em;
+    padding: 0.3em 0.5em;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.85em;
+  }
+  .cip-stats-settings-value {
+    flex: 0 0 auto;
+    min-width: 3em;
+    text-align: right;
+    color: #9aa0a6;
+    font-variant-numeric: tabular-nums;
+  }
+  .cip-stats-settings-hint {
+    font-size: 0.78em;
+    color: #7f848c;
+    line-height: 1.3;
+  }
+</style>
+
+<div class="cip-stats-app" ng-style="panelStyle()">
+<div class="cip-stats-body">
+
+  <div class="cip-stats-line cip-stats-survival-line" ng-class="{'cip-stats-line-seats': multiSeat()}" ng-click="toggleSettings(); $event.stopPropagation()" title="Click to open settings">
+    <span class="cip-stats-label">Survival Chance</span>
+    <span class="cip-stats-value" ng-if="!multiSeat()" ng-style="{color: survivalColor()}">{{ pct(stats.last.survivalPercent) }}%</span>
+    <span class="cip-stats-seats" ng-if="multiSeat()">
+      <span class="cip-stats-seat" style="grid-column: 1; grid-row: 1;" ng-if="settings.survivalSeats.driver">
+        <span class="cip-stats-seat-name">Driver</span>
+        <span class="cip-stats-seat-pct" ng-style="{color: seatColor('driver')}">{{ seatText('driver') }}</span>
+      </span>
+      <span class="cip-stats-seat" style="grid-column: 2; grid-row: 1;" ng-if="settings.survivalSeats.frontRight">
+        <span class="cip-stats-seat-name">Passenger</span>
+        <span class="cip-stats-seat-pct" ng-style="{color: seatColor('frontRight')}">{{ seatText('frontRight') }}</span>
+      </span>
+      <span class="cip-stats-seat" style="grid-column: 1; grid-row: 2;" ng-if="settings.survivalSeats.rearLeft">
+        <span class="cip-stats-seat-name">Rear L</span>
+        <span class="cip-stats-seat-pct" ng-style="{color: seatColor('rearLeft')}">{{ seatText('rearLeft') }}</span>
+      </span>
+      <span class="cip-stats-seat" style="grid-column: 2; grid-row: 2;" ng-if="settings.survivalSeats.rearRight">
+        <span class="cip-stats-seat-name">Rear R</span>
+        <span class="cip-stats-seat-pct" ng-style="{color: seatColor('rearRight')}">{{ seatText('rearRight') }}</span>
+      </span>
+    </span>
+
+    <div class="cip-stats-settings" ng-if="settingsOpen" ng-click="$event.stopPropagation()" ng-style="settingsPanelStyle()">
+
+      <div class="cip-stats-settings-label">Text size (largest)</div>
+      <div class="cip-stats-settings-slider-row">
+        <input type="range" min="10" max="120" step="1" ng-model="settings.fontSizePx">
+        <span class="cip-stats-settings-value">{{ settings.fontSizePx }}px</span>
+      </div>
+
+      <div class="cip-stats-settings-label" style="margin-top: 0.2em;">Text colour</div>
+      <div class="cip-stats-color-row">
+        <button
+          type="button"
+          class="cip-stats-color-swatch"
+          ng-repeat="c in textColorPresets"
+          ng-style="{backgroundColor: c}"
+          ng-class="{'cip-active': settings.textColor === c}"
+          ng-click="settings.textColor = c"
+          title="{{c}}"
+        ></button>
+      </div>
+      <div class="cip-stats-settings-slider-row">
+        <input type="text" class="cip-stats-color-hex-input" ng-model="settings.textColor" placeholder="#ffffff or a CSS colour name">
+      </div>
+
+      <div class="cip-stats-settings-label" style="margin-top: 0.2em;">Style (for video)</div>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.textCaps"> ALL CAPS</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.textBold"> Bold</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.textOutline"> Outline / shadow</label>
+      <div class="cip-stats-settings-slider-row">
+        <input type="range" min="0" max="100" step="5" ng-model="settings.textOutlineIntensity" ng-disabled="!settings.textOutline">
+        <span class="cip-stats-settings-value">{{ settings.textOutlineIntensity }}%</span>
+      </div>
+
+      <div class="cip-stats-settings-label" style="margin-top: 0.2em;">Body figure size</div>
+      <div class="cip-stats-settings-slider-row">
+        <input type="range" min="0.6" max="2" step="0.1" ng-model="settings.figureScale">
+        <span class="cip-stats-settings-value">{{ (settings.figureScale * 100) | number:0 }}%</span>
+      </div>
+
+      <div class="cip-stats-settings-label" style="margin-top: 0.2em;">Survival chance for</div>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.survivalSeats.driver"> Driver</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.survivalSeats.frontRight"> Front passenger</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.survivalSeats.rearLeft"> Rear left</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.survivalSeats.rearRight"> Rear right</label>
+      <div class="cip-stats-settings-hint">Tick more than one person to see each person's chance.</div>
+
+      <div class="cip-stats-settings-label" style="margin-top: 0.2em;">Shown stats</div>
+
+      <label class="cip-stats-settings-row cip-stats-settings-disabled">
+        <input type="checkbox" ng-model="settings.showSurvival" disabled> Survival Chance
+      </label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.showCost"> Recovery Cost</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.showRecovery"> Recovery Time</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.showWorstInjury"> Worst Injury</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.showCrashesSurvived"> Crashes Survived</label>
+      <label class="cip-stats-settings-row"><input type="checkbox" ng-model="settings.showMedKits"> Med Kits Used</label>
+      <div class="cip-stats-settings-hint">The text shrinks on its own so everything fits. Make the app bigger for bigger text.</div>
+      <div class="cip-stats-settings-hint">Click Survival Chance again, click outside, or press Escape to close.</div>
+    </div>
+  </div>
+
+  <div class="cip-stats-line" ng-if="settings.showCost">
+    <span class="cip-stats-label">Recovery Cost</span>
+    <span class="cip-stats-value">{{ costLabel() }}</span>
+  </div>
+
+  <div class="cip-stats-line" ng-if="settings.showRecovery">
+    <span class="cip-stats-label">Recovery Time</span>
+    <span class="cip-stats-value">{{ recoveryLabel }}<span class="cip-stats-sub" ng-if="recoverySub">{{ recoverySub }}</span></span>
+  </div>
+
+  <div class="cip-stats-line" ng-if="settings.showWorstInjury">
+    <span class="cip-stats-label">Worst Injury</span>
+    <span class="cip-stats-value cip-stats-value-wrap">{{ worstInjuryLabel || 'None' }}<span class="cip-stats-sub" ng-if="worstInjurySub">{{ worstInjurySub }}</span></span>
+  </div>
+
+  <div class="cip-stats-line" ng-if="settings.showCrashesSurvived">
+    <span class="cip-stats-label">Crashes Survived</span>
+    <span class="cip-stats-value">{{ crashesSurvived }} / {{ crashesSurvived + crashesNotSurvived }}</span>
+  </div>
+
+  <div class="cip-stats-line" ng-if="settings.showMedKits">
+    <span class="cip-stats-label">Med Kits Used</span>
+    <span class="cip-stats-value">{{ stats.medKitsUsed }}</span>
+  </div>
+</div>
+
+</div>

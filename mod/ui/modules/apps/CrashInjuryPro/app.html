@@ -1,0 +1,1835 @@
+<style>
+  .cip-app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.6em;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    width: 100%;
+    height: 100%;
+
+    min-width: 25.5em;
+    box-sizing: border-box;
+    color: #d7dade;
+    transition: font-size 150ms ease;
+
+    max-height: 30em;
+    overflow: hidden;
+  }
+  .cip-app.cip-expanded {
+    font-size: 17px;
+  }
+  .cip-app * { box-sizing: border-box; }
+
+  .cip-app.cip-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    z-index: 99999;
+    background: #14161a;
+    padding: 1.4em 1.8em;
+    font-size: 20px;
+  }
+
+  .cip-app.cip-fullscreen .cip-content-col {
+    max-width: 46em;
+  }
+
+  .cip-realistic-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+
+  .cip-shock-blackout-overlay {
+    background: #000;
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  .cip-shock-blackout-overlay.cip-visible { opacity: 1; }
+
+  .cip-death-overlay {
+    background: #000;
+    overflow: hidden;
+    opacity: 0;
+    transition: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2em;
+  }
+  .cip-death-overlay.cip-active { opacity: 1; }
+
+  .cip-death-overlay .cip-fx-vig, .cip-death-overlay .cip-fx-black, .cip-death-overlay .cip-fx-flash { z-index: 1; }
+
+  .cip-death-overlay.cip-active .cip-fx-vig, .cip-death-overlay.cip-active .cip-fx-black { animation: none; opacity: 1; }
+  .cip-death-text {
+    color: #b7bcc4;
+    font-family: system-ui, sans-serif;
+    font-size: 1.4em;
+    text-align: center;
+    max-width: 20em;
+    opacity: 0;
+    transition: opacity 0.8s ease-in 0.7s;
+    position: relative; z-index: 2;
+  }
+  .cip-death-overlay.cip-active .cip-death-text { opacity: 1; }
+
+  .cip-death-btn-row {
+    display: flex;
+    gap: 0.7em;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.6s ease-in 1.3s;
+    position: relative; z-index: 2;
+  }
+  .cip-death-overlay.cip-active .cip-death-btn-row { opacity: 1; }
+
+  .cip-death-report-btn, .cip-death-exit-btn {
+    background: transparent;
+    border: 1px solid #5a606b;
+    color: #b7bcc4;
+    font-family: system-ui, sans-serif;
+    font-size: 0.85em;
+    letter-spacing: 0.03em;
+    padding: 0.55em 1.4em;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .cip-death-report-btn:hover, .cip-death-exit-btn:hover { border-color: #8fb3d9; color: #e8eaed; }
+
+  .cip-death-exit-btn { border-color: #3a3e46; color: #8b909a; }
+
+  .cip-unconscious-overlay, .cip-death-overlay { background: transparent; overflow: hidden; }
+  .cip-fx-vig, .cip-fx-black, .cip-fx-flash { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
+  .cip-fx-vig { background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,0) 20%, rgba(8,4,4,0.55) 62%, rgba(0,0,0,0.92) 100%); }
+  .cip-fx-black { background: #000; }
+  .cip-fx-flash { background: radial-gradient(ellipse at 50% 50%, rgba(255,250,245,0.55) 0%, rgba(235,225,220,0.35) 55%, rgba(120,40,30,0.25) 100%); }
+
+  .cip-unconscious-overlay.cip-active .cip-fx-vig { animation: cipFadeTo1 0.45s ease-in forwards; }
+  .cip-unconscious-overlay.cip-active .cip-fx-black { animation: cipFadeTo1 0.6s ease-in 0.3s forwards; }
+  .cip-unconscious-overlay.cip-active .cip-fx-flash { animation: cipSoftFlash 0.7s ease-out forwards; }
+
+  .cip-unconscious-overlay.cip-active.cip-instant .cip-fx-vig,
+  .cip-unconscious-overlay.cip-active.cip-instant .cip-fx-black { animation: none; opacity: 1; }
+  .cip-unconscious-overlay.cip-active.cip-instant .cip-fx-flash { animation: none; opacity: 0; }
+
+  .cip-unconscious-overlay.cip-recovering .cip-fx-black { animation: cipComeRound 3.6s ease-in-out forwards; }
+  .cip-unconscious-overlay.cip-recovering .cip-fx-vig { animation: cipVigLift 3.6s ease-in-out forwards; }
+
+  .cip-unconscious-overlay.cip-cancelling .cip-fx-black { opacity: 1; animation: cipFadeTo0 0.6s ease-out forwards; }
+  .cip-unconscious-overlay.cip-cancelling .cip-fx-vig { opacity: 1; animation: cipFadeTo0 0.9s ease-out forwards; }
+  @keyframes cipFadeTo1 { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cipFadeTo0 { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes cipSoftFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes cipComeRound {
+    0% { opacity: 1; } 22% { opacity: 0.62; } 34% { opacity: 0.86; } 55% { opacity: 0.38; }
+    66% { opacity: 0.55; } 100% { opacity: 0; }
+  }
+  @keyframes cipVigLift { 0% { opacity: 1; } 70% { opacity: 0.85; } 100% { opacity: 0.25; } }
+
+  .cip-impact-overlay { overflow: hidden; }
+  .cip-impact-overlay .cip-impact-inner { position: absolute; inset: 0; }
+  .cip-impact-overlay .cip-fx-vig, .cip-impact-overlay .cip-fx-flash { opacity: 0; }
+  .cip-impact-overlay.cip-hit .cip-fx-flash { animation: cipSoftFlash 0.6s ease-out forwards; }
+  .cip-impact-overlay.cip-hit .cip-fx-vig { animation: cipImpactVig 1.6s ease-out forwards; }
+  @keyframes cipImpactVig { 0% { opacity: 0; } 10% { opacity: 0.85; } 35% { opacity: 0.6; } 100% { opacity: 0; } }
+
+  .cip-sim-paused .cip-realistic-overlay { visibility: hidden !important; }
+
+  .cip-vision-blur-overlay {
+
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: backdrop-filter 0.4s ease-out, -webkit-backdrop-filter 0.4s ease-out;
+  }
+  .cip-vision-vignette-overlay {
+
+    transition: background 0.6s ease-out;
+  }
+
+  .cip-pain-pulse-overlay {
+
+    animation-name: cip-pain-pulse;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  @keyframes cip-pain-pulse {
+    0%   { opacity: 0; }
+    50%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .cip-dizzy-overlay {
+    inset: -12%;
+    backdrop-filter: blur(1.5px);
+    -webkit-backdrop-filter: blur(1.5px);
+    transform-origin: center;
+    animation: cip-dizzy-wobble 8s ease-in-out infinite;
+  }
+  @keyframes cip-dizzy-wobble {
+    0%   { transform: rotate(-1.5deg) scale(1.1); }
+    50%  { transform: rotate(1.5deg) scale(1.1); }
+    100% { transform: rotate(-1.5deg) scale(1.1); }
+  }
+
+  .cip-figure-col {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4em;
+    z-index: 2;
+  }
+
+  .cip-figure-controls {
+    width: 100%;
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+    gap: 0.3em;
+    margin-top: 0.3em;
+    min-height: 5.7em;
+
+    position: relative;
+  }
+
+  .cip-ctrl-btn { overflow: visible; }
+  .cip-figure-controls { overflow: visible; }
+
+  .cip-ctrl-btn[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 0.35em);
+    left: 0;
+    right: 0;
+    z-index: 6;
+    padding: 0.4em 0.5em;
+    font-size: 0.72em;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+
+    max-height: 2.8em;
+    overflow: hidden;
+    color: #eceef0;
+    background: rgba(22, 24, 28, 0.96);
+    border: 1px solid rgba(180, 186, 196, 0.45);
+    border-radius: 0.35em;
+    box-shadow: 0 0.2em 0.6em rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 120ms ease, visibility 0s linear 120ms;
+    pointer-events: none;
+  }
+
+  .cip-ctrl-btn[data-tip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .cip-ctrl-btn[data-tip]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .cip-figure-chip-stack {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 0.3em;
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 0.3em;
+  }
+  .cip-figure-chip {
+    display: none;
+    font-size: 0.9em;
+    color: #c7cbd1;
+    background: rgba(9, 11, 14, 0.8);
+    border-radius: 0.3em;
+    padding: 0.25em 0.6em;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cip-figure-chip.cip-visible { display: inline-block; }
+
+  .cip-occupant-state-chip {
+    display: inline-block;
+    font-weight: 600;
+    color: #eceef0;
+  }
+
+  .cip-figure-body-target {
+    width: 100%;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .cip-figure-body-target svg {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    filter: drop-shadow(0 0.25em 0.6em rgba(0, 0, 0, 0.55));
+    transition: filter 1.5s ease-in;
+  }
+
+  .cip-figure-body-target.cip-figure-dead svg {
+    filter: brightness(0.82) drop-shadow(0 0.25em 0.6em rgba(0, 0, 0, 0.55));
+  }
+
+  .cip-body-row {
+    flex: 1 1 auto;
+    position: relative;
+    min-height: 0;
+  }
+  .cip-content-col {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+
+    min-width: 11em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    overflow: hidden;
+  }
+
+  .cip-notif-stack {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5em;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 16em;
+    overflow: hidden;
+  }
+  .cip-expanded .cip-notif-stack { max-height: 22em; }
+  .cip-notif-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    height: 2.1em;
+    flex: 0 0 auto;
+    padding: 0 0.7em;
+    background: rgba(9, 11, 14, 0.76);
+    border: 1px solid transparent;
+    border-radius: 0.35em;
+    opacity: 0;
+    transform: translateY(-0.3em);
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+  .cip-notif-row.cip-notif-visible { opacity: 1; transform: translateY(0); }
+  .cip-notif-row.cip-notif-fading { opacity: 0; transition-duration: 500ms; }
+  .cip-notif-glyph { flex: 0 0 auto; width: 1.5em; height: 1.5em; display: inline-flex; color: #c7cbd1; }
+  .cip-notif-glyph svg { display: block; width: 100%; height: 100%; }
+  .cip-notif-text {
+    font-size: 0.95em;
+    color: #d7dade;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .cip-figure-body-target.cip-figure-clickable { cursor: pointer; }
+
+  .cip-report-panel {
+    background: rgba(13, 15, 18, 0.92);
+    border: 1px solid #2a2e35;
+    border-radius: 0.35em;
+    padding: 0.6em 0.7em;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .cip-section-label {
+    font-size: 0.68em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9aa0a6;
+    margin: 0 0 0.6em;
+  }
+
+  .cip-injury-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  .cip-injury-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+    border: 1px solid;
+    border-radius: 0.3em;
+    padding: 0.5em 0.6em;
+  }
+  .cip-injury-glyph { flex: 0 0 auto; width: 1.6em; height: 1.6em; display: inline-flex; margin-top: 0.05em; }
+  .cip-injury-glyph svg { display: block; width: 100%; height: 100%; }
+  .cip-injury-text { min-width: 0; flex: 1 1 auto; }
+  .cip-injury-plain { font-size: 0.95em; color: #eceef0; overflow-wrap: anywhere; }
+  .cip-injury-tech {
+    margin-top: 0.3em;
+    font-family: 'Overpass Mono', 'Consolas', monospace;
+    font-size: 0.72em;
+    color: #8b909a;
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+  }
+
+  .cip-gear-row { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .cip-gear-dd { position: relative; flex: 1 1 100%; min-width: 0; max-width: 100%; }
+  .cip-gear-select { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; box-sizing: border-box;
+    background: #1d2026; color: #e6e8eb; border: 1px solid #3a3f48; border-radius: 4px; font-size: 0.8em; padding: 3px 6px; cursor: pointer; text-align: left; }
+  .cip-gear-current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .cip-gear-caret { color: #9aa0a8; flex: none; }
+  .cip-gear-menu { position: absolute; left: 0; right: 0; top: 100%; z-index: 50; margin-top: 2px; background: #1d2026;
+    border: 1px solid #4a505a; border-radius: 4px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); overflow: hidden; }
+  .cip-gear-menu.cip-gear-menu-up { top: auto; bottom: 100%; margin-top: 0; margin-bottom: 2px; }
+  .cip-gear-opt { padding: 5px 7px; font-size: 0.8em; color: #d7dade; cursor: pointer; white-space: normal; }
+  .cip-gear-opt:hover { background: #2c313a; }
+  .cip-gear-opt.cip-gear-opt-on { color: #cfe3ff; background: rgba(91,134,197,0.22); }
+  .cip-seat-slot { min-width: 0; box-sizing: border-box; overflow: visible; }
+  .cip-airbag-btn { background: #1d2026; color: #9aa0a8; border: 1px solid #3a3f48; border-radius: 4px; font-size: 0.75em; padding: 2px 6px; cursor: pointer; }
+  .cip-airbag-btn.cip-airbag-on { color: #cfe3ff; border-color: #5b86c5; background: rgba(91,134,197,0.18); }
+  .cip-vehicle-summary { color: #9aa0a8; font-weight: normal; font-size: 0.85em; }
+  .cip-seat-slot-toggle[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .cip-sev-word { color: #9aa0a8; font-size: 0.85em; }
+  .cip-caveat-marker {
+    display: inline-block;
+    margin-left: 0.35em;
+    font-size: 0.8em;
+    font-weight: 700;
+    cursor: help;
+  }
+  .cip-caveat-marker.cip-caveat-hedge { color: #b7ab7c; }
+  .cip-caveat-marker.cip-caveat-lowerFidelity { color: #7d828a; }
+  .cip-injury-caveat-full {
+    margin-top: 0.35em;
+    font-size: 0.72em;
+    color: #8b909a;
+    font-style: italic;
+    overflow-wrap: anywhere;
+  }
+
+  .cip-injury-clinical {
+    margin-top: 0.3em;
+    font-size: 0.78em;
+    color: #9aa0a6;
+    overflow-wrap: anywhere;
+  }
+
+  .cip-verdict {
+    margin-top: 0.7em;
+    padding: 0.55em 0.7em;
+    border-radius: 0.3em;
+    border: 1px solid;
+  }
+  .cip-verdict-badge {
+    font-size: 0.72em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-bottom: 0.25em;
+  }
+  .cip-verdict-summary { font-size: 0.92em; color: #eceef0; overflow-wrap: anywhere; }
+
+  .cip-band-minor .cip-headline-outlook-badge { color: #8fd9a0; }
+  .cip-band-minor .cip-headline-bar-fill { background: #8fd9a0; }
+  .cip-band-minor.cip-verdict { background: rgba(143, 217, 160, 0.12); border-color: rgba(143, 217, 160, 0.45); }
+  .cip-band-minor .cip-verdict-badge { color: #8fd9a0; }
+  .cip-band-likely .cip-headline-outlook-badge { color: #a8d98f; }
+  .cip-band-likely .cip-headline-bar-fill { background: #a8d98f; }
+  .cip-band-likely.cip-verdict { background: rgba(168, 217, 143, 0.12); border-color: rgba(168, 217, 143, 0.45); }
+  .cip-band-likely .cip-verdict-badge { color: #a8d98f; }
+  .cip-band-treatable .cip-headline-outlook-badge { color: #d9d08f; }
+  .cip-band-treatable .cip-headline-bar-fill { background: #d9d08f; }
+  .cip-band-treatable.cip-verdict { background: rgba(217, 208, 143, 0.12); border-color: rgba(217, 208, 143, 0.45); }
+  .cip-band-treatable .cip-verdict-badge { color: #d9d08f; }
+  .cip-band-serious .cip-headline-outlook-badge { color: #e3c98f; }
+  .cip-band-serious .cip-headline-bar-fill { background: #e3c98f; }
+  .cip-band-serious.cip-verdict { background: rgba(227, 201, 143, 0.12); border-color: rgba(227, 201, 143, 0.45); }
+  .cip-band-serious .cip-verdict-badge { color: #e3c98f; }
+  .cip-band-severe .cip-headline-outlook-badge { color: #e8a86a; }
+  .cip-band-severe .cip-headline-bar-fill { background: #e8a86a; }
+  .cip-band-severe.cip-verdict { background: rgba(232, 168, 106, 0.12); border-color: rgba(232, 168, 106, 0.45); }
+  .cip-band-severe .cip-verdict-badge { color: #e8a86a; }
+  .cip-band-critical .cip-headline-outlook-badge { color: #f0a86a; }
+  .cip-band-critical .cip-headline-bar-fill { background: #f0a86a; }
+  .cip-band-critical.cip-verdict { background: rgba(240, 168, 106, 0.12); border-color: rgba(240, 168, 106, 0.45); }
+  .cip-band-critical .cip-verdict-badge { color: #f0a86a; }
+  .cip-band-urgent .cip-headline-outlook-badge { color: #ee8055; }
+  .cip-band-urgent .cip-headline-bar-fill { background: #ee8055; }
+  .cip-band-urgent.cip-verdict { background: rgba(238, 128, 85, 0.12); border-color: rgba(238, 128, 85, 0.45); }
+  .cip-band-urgent .cip-verdict-badge { color: #ee8055; }
+  .cip-band-grave .cip-headline-outlook-badge { color: #e2604f; }
+  .cip-band-grave .cip-headline-bar-fill { background: #e2604f; }
+  .cip-band-grave.cip-verdict { background: rgba(226, 96, 79, 0.12); border-color: rgba(226, 96, 79, 0.45); }
+  .cip-band-grave .cip-verdict-badge { color: #e2604f; }
+  .cip-band-fatal .cip-headline-outlook-badge { color: #ffb4b4; }
+  .cip-band-fatal .cip-headline-bar-fill { background: #ffb4b4; }
+  .cip-band-fatal.cip-verdict { background: rgba(255, 180, 180, 0.12); border-color: rgba(255, 180, 180, 0.45); }
+  .cip-band-fatal .cip-verdict-badge { color: #ffb4b4; }
+  .cip-outlook-likelySurvivable.cip-verdict { background: rgba(143, 217, 160, 0.12); border-color: rgba(143, 217, 160, 0.45); }
+  .cip-outlook-likelySurvivable .cip-verdict-badge { color: #8fd9a0; }
+  .cip-outlook-seriousButLikelySurvivable.cip-verdict { background: rgba(227, 201, 143, 0.12); border-color: rgba(227, 201, 143, 0.45); }
+  .cip-outlook-seriousButLikelySurvivable .cip-verdict-badge { color: #e3c98f; }
+  .cip-outlook-critical.cip-verdict { background: rgba(240, 168, 106, 0.12); border-color: rgba(240, 168, 106, 0.45); }
+  .cip-outlook-critical .cip-verdict-badge { color: #f0a86a; }
+  .cip-outlook-notSurvivable.cip-verdict { background: rgba(255, 180, 180, 0.12); border-color: rgba(255, 180, 180, 0.45); }
+  .cip-outlook-notSurvivable .cip-verdict-badge { color: #ffb4b4; }
+
+  .cip-iss-row {
+    margin-top: 0.5em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+  }
+  .cip-iss-label {
+    flex: 0 0 auto;
+    font-size: 0.68em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9aa0a6;
+  }
+  .cip-iss-value { font-size: 1em; font-weight: 600; color: #eceef0; }
+  .cip-iss-trauma-flag { font-size: 0.78em; color: #f0a86a; margin-left: 0.4em; }
+
+  .cip-headline-survival {
+    flex: 0 0 auto;
+
+    position: relative;
+    z-index: 1;
+    padding: 0.45em 0.65em;
+    border-radius: 0.35em;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(10, 11, 13, 0.55);
+  }
+  .cip-headline-top-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4em;
+    margin-bottom: 0.4em;
+
+    min-width: 0;
+    overflow: hidden;
+  }
+  .cip-headline-iss-value {
+    flex: 0 0 auto;
+    font-size: 1.7em;
+    font-weight: 700;
+    line-height: 1;
+    color: #eceef0;
+  }
+
+  .cip-headline-iss-subtext {
+    margin-top: 0.3em;
+    font-size: 0.68em;
+    color: #9aa0a6;
+  }
+  .cip-headline-outlook-badge {
+    margin-left: auto;
+    font-size: 0.74em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    text-align: right;
+
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cip-headline-bar-track {
+    position: relative;
+    height: 0.5em;
+    border-radius: 0.28em;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .cip-headline-bar-fill {
+    height: 100%;
+    border-radius: 0.28em;
+    background: #9aa0a6;
+    transition: width 200ms ease;
+  }
+  .cip-outlook-likelySurvivable .cip-headline-outlook-badge { color: #8fd9a0; }
+  .cip-outlook-likelySurvivable .cip-headline-bar-fill { background: #8fd9a0; }
+  .cip-outlook-seriousButLikelySurvivable .cip-headline-outlook-badge { color: #e3c98f; }
+  .cip-outlook-seriousButLikelySurvivable .cip-headline-bar-fill { background: #e3c98f; }
+  .cip-outlook-critical .cip-headline-outlook-badge { color: #f0a86a; }
+  .cip-outlook-critical .cip-headline-bar-fill { background: #f0a86a; }
+  .cip-outlook-notSurvivable .cip-headline-outlook-badge { color: #ffb4b4; }
+  .cip-outlook-notSurvivable .cip-headline-bar-fill { background: #ffb4b4; }
+
+  .cip-restraint-row {
+    margin-top: 0.35em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+  }
+
+  .cip-systemic-panel {
+    margin-top: 0.7em;
+  }
+  .cip-systemic-box {
+    border: 1px solid #2a2e35;
+    border-radius: 0.3em;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.5em 0.6em;
+  }
+  .cip-systemic-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em 0.5em;
+  }
+  .cip-systemic-chip {
+    font-size: 0.85em;
+    padding: 0.3em 0.6em;
+    border-radius: 0.25em;
+    background: rgba(255, 255, 255, 0.07);
+    color: #c7cbd1;
+    white-space: nowrap;
+  }
+  .cip-systemic-chip-label { color: #9aa0a6; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.85em; margin-right: 0.35em; }
+
+  .cip-systemic-chip.cip-systemic-warn { background: rgba(240, 168, 106, 0.2); color: #f0c090; }
+  .cip-systemic-chip.cip-systemic-critical { background: rgba(255, 120, 120, 0.22); color: #ffb4b4; }
+  .cip-systemic-detail {
+    margin-top: 0.5em;
+    padding-top: 0.4em;
+    border-top: 1px solid #2a2e35;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+
+    max-height: 8em;
+    overflow-y: auto;
+  }
+  .cip-systemic-detail-line { font-size: 0.82em; color: #9aa0a6; overflow-wrap: anywhere; }
+
+  .cip-debug-panel {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 0.4em;
+    width: 22em;
+    max-width: 90vw;
+    max-height: 14em;
+    overflow: auto;
+    z-index: 20;
+    padding: 0.5em 0.6em;
+    background: #0b0d10;
+    border: 1px dashed #4a4f58;
+    border-radius: 0.3em;
+    box-shadow: 0 0.2em 0.6em rgba(0, 0, 0, 0.6);
+    font-family: 'Overpass Mono', 'Consolas', monospace;
+    font-size: 0.75em;
+    line-height: 1.7;
+    color: #c7cbd1;
+  }
+  .cip-debug-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .cip-debug-line-sub { white-space: normal; overflow: visible; text-overflow: clip; color: #8a8f99; font-size: 0.92em; }
+
+  .cip-ctrl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2em;
+    min-height: 1.7em !important;
+    padding: 0.3em 0.35em !important;
+    font-family: system-ui, sans-serif;
+    font-size: 0.8em !important;
+    font-weight: 600;
+    text-align: center;
+    color: #d7dade;
+    background: rgba(120, 126, 136, 0.16);
+    border: 1px solid rgba(180, 186, 196, 0.4);
+    border-radius: 0.3em;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, transform 80ms ease, color 120ms ease;
+  }
+
+  .cip-ctrl-btn .cip-ic { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; display: block; }
+  .cip-ctrl-btn .cip-ic-wrap { display: flex; align-items: center; }
+  .cip-ctrl-btn .cip-ctrl-count { font-variant-numeric: tabular-nums; font-size: 0.95em; line-height: 1; }
+  .cip-ctrl-btn:hover { filter: brightness(1.35); }
+
+  .cip-settings-section-title { font-size: 0.72em; letter-spacing: 0.12em; text-transform: uppercase; color: #8b909a; margin: 1.1em 0 0.3em; }
+  .cip-cam-row { padding: 0.7em 0.8em; border: 1px solid rgba(255,255,255,0.07); border-radius: 0.5em; background: rgba(255,255,255,0.02); }
+  .cip-cam-head { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 0.8em; cursor: pointer; user-select: none; }
+  .cip-cam-name { font-size: 0.95em; color: #eceef0; }
+  .cip-cam-subname { font-size: 0.85em; color: #c9ccd2; margin-top: 0.2em; }
+  .cip-cam-desc { margin: 0.25em 0 0; font-size: 0.78em; color: #8b909a; line-height: 1.35; }
+  .cip-cam-slider { display: flex; align-items: center; gap: 0.6em; margin-top: 0.55em; }
+  .cip-cam-slider input[type="range"] { flex: 1 1 auto; min-width: 0; }
+  .cip-cam-sub { margin-top: 0.8em; padding-top: 0.7em; border-top: 1px solid rgba(255,255,255,0.06); }
+  .cip-cam-slider.cip-off, .cip-cam-sub.cip-off { opacity: 0.4; }
+
+  .cip-cam-head input.cip-switch-input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; margin: 0; }
+  .cip-care-stay { font-size: 0.82em; opacity: 0.75; font-weight: 400; }
+  .cip-switch { position: relative; flex: none; width: 2.3em; height: 1.3em; border-radius: 0.65em; background: #3a3e46; transition: background 150ms ease; }
+  .cip-switch::after { content: ''; position: absolute; top: 0.15em; left: 0.15em; width: 1em; height: 1em; border-radius: 50%; background: #aeb2ba; transition: transform 150ms ease, background 150ms ease; }
+  .cip-switch-input:checked + .cip-switch { background: #c94444; }
+  .cip-switch-input:checked + .cip-switch::after { transform: translateX(1em); background: #fff; }
+  .cip-switch-input:focus-visible + .cip-switch { outline: 2px solid #8fb3d9; outline-offset: 2px; }
+  .cip-ctrl-btn:active { transform: scale(0.92); filter: brightness(1.6); }
+
+  .cip-ctrl-btn.cip-restraint-beltedAirbag { background: rgba(143, 217, 160, 0.16); border-color: rgba(143, 217, 160, 0.55); color: #8fd9a0; }
+  .cip-ctrl-btn.cip-restraint-beltedOnly { background: rgba(224, 208, 176, 0.16); border-color: rgba(224, 208, 176, 0.5); color: #dcd0b8; }
+  .cip-ctrl-btn.cip-restraint-unbelted { background: rgba(224, 176, 176, 0.16); border-color: rgba(224, 176, 176, 0.5); color: #d9b8b8; }
+
+  .cip-ctrl-btn.cip-ctrl-realistic { background: rgba(120, 126, 136, 0.16); border-color: rgba(180, 186, 196, 0.4); color: #c9ccd2; }
+  .cip-ctrl-btn.cip-ctrl-realistic.cip-ctrl-on { background: rgba(214, 72, 72, 0.22); border-color: rgba(232, 96, 96, 0.85); color: #ffd9d6; }
+
+  .cip-ctrl-btn.cip-ctrl-medkit { background: rgba(224, 140, 150, 0.14); border-color: rgba(224, 140, 150, 0.45); color: #e8b0b8; }
+  .cip-ctrl-btn.cip-ctrl-medkit:not(.cip-disabled):hover { background: rgba(224, 140, 150, 0.3); border-color: #e08c96; color: #eceef0; }
+  .cip-ctrl-btn.cip-ctrl-medkit.cip-ctrl-medkit-busy {
+    background: rgba(227, 201, 143, 0.22);
+    border-color: rgba(227, 201, 143, 0.6);
+    color: #e3c98f;
+    opacity: 1;
+    cursor: not-allowed;
+    animation: cip-medkit-busy-pulse 1s ease-in-out infinite;
+  }
+  @keyframes cip-medkit-busy-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  .cip-ctrl-btn.cip-ctrl-medkit.cip-ctrl-medkit-spent {
+
+  }
+
+  .cip-ctrl-btn.cip-ctrl-expand { background: rgba(120, 126, 136, 0.16); border-color: rgba(180, 186, 196, 0.4); color: #c9ccd2; }
+  .cip-ctrl-btn.cip-ctrl-expand.cip-ctrl-on { background: rgba(200, 204, 212, 0.24); border-color: rgba(220, 224, 230, 0.7); color: #eef0f2; }
+
+  .cip-ctrl-btn.cip-ctrl-settings { background: rgba(120, 126, 136, 0.16); border-color: rgba(180, 186, 196, 0.4); color: #c9ccd2; }
+
+  .cip-ctrl-btn.cip-disabled { opacity: 0.4; cursor: not-allowed; background: rgba(120, 126, 136, 0.08); border-color: rgba(120, 126, 136, 0.3); color: #7f848c; }
+  .cip-ctrl-btn.cip-disabled:hover, .cip-ctrl-btn.cip-disabled:active { filter: none; transform: none; }
+
+  .cip-ctrl-btn.cip-ctrl-primary {
+    background: rgba(236, 238, 240, 0.9);
+    border-color: rgba(236, 238, 240, 0.95);
+    color: #15171a;
+    letter-spacing: 0.02em;
+  }
+
+  .cip-ctrl-btn.cip-ctrl-primary.cip-disabled {
+    background: rgba(120, 126, 136, 0.08);
+    border-color: rgba(120, 126, 136, 0.3);
+    color: #7f848c;
+  }
+
+  .cip-settings-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200000;
+    background: rgba(6, 7, 9, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, sans-serif;
+    box-sizing: border-box;
+  }
+  .cip-settings-overlay * { box-sizing: border-box; }
+  .cip-settings-panel {
+    width: 26em;
+    max-width: 92vw;
+    max-height: 85vh;
+    overflow-y: auto;
+    background: #14161a;
+    border: 1px solid #2a2e35;
+    border-radius: 0.5em;
+    box-shadow: 0 0.6em 2em rgba(0, 0, 0, 0.5);
+    color: #d7dade;
+    font-size: 16px;
+    padding: 1.1em 1.3em 1.3em;
+  }
+  .cip-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.9em;
+    padding-bottom: 0.7em;
+    border-bottom: 1px solid #2a2e35;
+  }
+  .cip-settings-title { font-size: 1.1em; font-weight: 700; color: #eceef0; }
+  .cip-settings-close-btn {
+    background: transparent;
+    border: 1px solid #4a4f58;
+    color: #c7cbd1;
+    border-radius: 0.3em;
+    width: 1.9em;
+    height: 1.9em;
+    font-size: 1em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, transform 80ms ease;
+  }
+  .cip-settings-close-btn:hover { border-color: #8fb3d9; color: #eceef0; }
+  .cip-settings-close-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.08); }
+  .cip-settings-row { margin-bottom: 1.1em; }
+  .cip-settings-row:last-child { margin-bottom: 0; }
+  .cip-settings-row-label {
+    display: flex;
+    align-items: center;
+    gap: 0.55em;
+    font-size: 0.95em;
+    color: #eceef0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cip-settings-row-label input[type="checkbox"] {
+    width: 1.15em;
+    height: 1.15em;
+    accent-color: #8fb3d9;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .cip-settings-row-desc { margin: 0.2em 0 0 1.7em; font-size: 0.78em; color: #8b909a; }
+  .cip-settings-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    margin: 0.5em 0 0 1.7em;
+  }
+  .cip-settings-slider-row input[type="range"] {
+    flex: 1 1 auto;
+    accent-color: #8fb3d9;
+    cursor: pointer;
+  }
+  .cip-settings-slider-row input[type="range"]:disabled { cursor: not-allowed; opacity: 0.4; }
+  .cip-settings-slider-value { flex: 0 0 auto; width: 3em; text-align: right; font-size: 0.85em; color: #9aa0a6; font-variant-numeric: tabular-nums; }
+
+  .cip-settings-row-title { font-size: 0.95em; color: #eceef0; }
+  .cip-settings-segmented {
+    display: flex;
+    gap: 0.4em;
+    margin-top: 0.5em;
+  }
+  .cip-settings-segmented-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.4em 0.3em;
+    font-family: system-ui, sans-serif;
+    font-size: 0.76em;
+    font-weight: 600;
+    text-align: center;
+    color: #9aa0a6;
+    background: rgba(120, 126, 136, 0.1);
+    border: 1px solid rgba(180, 186, 196, 0.3);
+    border-radius: 0.3em;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
+  }
+  .cip-settings-segmented-btn:hover { filter: brightness(1.3); }
+  .cip-settings-segmented-btn:active { transform: scale(0.96); }
+
+  .cip-settings-segmented-btn.cip-active {
+    background: rgba(143, 179, 217, 0.28);
+    border-color: #8fb3d9;
+    color: #eceef0;
+  }
+
+  .cip-settings-slider-row.cip-no-indent { margin-left: 0; }
+
+  .cip-settings-segmented.cip-lang-grid { flex-wrap: wrap; }
+
+  .cip-care-badge { display: inline-block; padding: 0.1em 0.5em; border-radius: 0.3em; font-size: 0.78em; font-weight: 700; letter-spacing: 0.02em; }
+  .cip-care-dead { background: rgba(20, 20, 22, 0.9); color: #e6e6e6; border: 1px solid #55585e; }
+  .cip-care-critical { background: rgba(196, 40, 40, 0.28); color: #ff9c9c; border: 1px solid rgba(255, 110, 110, 0.6); }
+  .cip-care-serious { background: rgba(214, 120, 40, 0.24); color: #ffc58f; border: 1px solid rgba(255, 170, 100, 0.55); }
+  .cip-care-injured { background: rgba(214, 190, 60, 0.18); color: #f1df8c; border: 1px solid rgba(240, 215, 110, 0.45); }
+  .cip-care-minor, .cip-care-fine { background: rgba(80, 180, 110, 0.16); color: #a9e5b9; border: 1px solid rgba(130, 210, 150, 0.4); }
+  .cip-report-vitals { margin-top: 0.1em; }
+  .cip-settings-segmented.cip-lang-grid .cip-settings-segmented-btn { flex: 1 1 28%; }
+  .cip-settings-footer {
+    margin-top: 1.1em;
+    padding-top: 0.8em;
+    border-top: 1px solid #2a2e35;
+    font-size: 0.76em;
+    color: #8b909a;
+  }
+
+  .cip-occupant-grid {
+    display: block;
+    width: 100%;
+  }
+
+  .cip-col-multi .cip-figure-controls {
+    max-width: 14em;
+    align-self: flex-start;
+    width: 100%;
+  }
+
+  .cip-col-multi > .cip-occupant-grid { align-self: stretch; }
+
+  .cip-occupant-grid.cip-multi {
+    display: grid;
+    gap: 0.4em;
+    align-items: stretch;
+  }
+
+  .cip-occupant-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .cip-occupant-grid.cip-multi .cip-occupant-cell {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.4em;
+  }
+
+  .cip-occupant-grid.cip-multi .cip-figure-body-target,
+  .cip-occupant-grid.cip-multi .cip-pax-body-target {
+    flex: 0 0 auto;
+  }
+
+  .cip-seat-readout {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex: 1 1 0;
+    min-width: 0;
+    line-height: 1.2;
+    overflow: hidden;
+  }
+  .cip-seat-pct {
+    font-size: 1.25em;
+    font-weight: 700;
+    color: #eceef0;
+    letter-spacing: 0.01em;
+  }
+
+  .cip-seat-pct.cip-band-minor { color: #8fd9a0; }
+  .cip-seat-pct.cip-band-likely { color: #a8d98f; }
+  .cip-seat-pct.cip-band-treatable { color: #d9d08f; }
+  .cip-seat-pct.cip-band-serious { color: #e3c98f; }
+  .cip-seat-pct.cip-band-severe { color: #e8a86a; }
+  .cip-seat-pct.cip-band-critical { color: #f0a86a; }
+  .cip-seat-pct.cip-band-urgent { color: #ee8055; }
+  .cip-seat-pct.cip-band-grave { color: #e2604f; }
+  .cip-seat-pct.cip-band-fatal { color: #d1443f; }
+
+  .cip-seat-state {
+    font-size: 0.82em;
+    color: #c3c9d1;
+    max-width: 100%;
+
+    overflow-wrap: anywhere;
+  }
+
+  .cip-seat-label {
+    font-size: 0.72em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8b929c;
+    margin-top: 0.25em;
+  }
+
+  .cip-occupant-grid:not(.cip-multi) .cip-seat-label,
+  .cip-occupant-grid:not(.cip-multi) .cip-seat-readout { display: none; }
+
+  .cip-pax-body-target {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .cip-pax-body-target svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+  }
+
+  .cip-occupant-cell.cip-seat-empty .cip-pax-body-target {
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 0.35em;
+    box-sizing: border-box;
+  }
+
+  .cip-occupant-cell.cip-seat-empty .cip-seat-readout { justify-content: center; }
+  .cip-occupant-cell.cip-seat-empty .cip-seat-label { color: #5b626c; }
+
+  .cip-occupant-cell.cip-seat-dead .cip-pax-body-target svg {
+    filter: brightness(0.82);
+  }
+
+  .cip-ctrl-btn.cip-ctrl-seats {
+    background: rgba(120, 126, 136, 0.16);
+    border-color: rgba(180, 186, 196, 0.4);
+    color: #c9ccd2;
+    font-size: 0.8em;
+    letter-spacing: -0.02em;
+  }
+  .cip-ctrl-btn.cip-ctrl-seats.cip-ctrl-on {
+    background: rgba(200, 204, 212, 0.24);
+    border-color: rgba(220, 224, 230, 0.7);
+    color: #eef0f2;
+  }
+
+  .cip-seat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(8, 10, 13, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99998;
+    font-size: 14px;
+  }
+  .cip-seat-overlay * { box-sizing: border-box; }
+
+  .cip-seat-panel {
+    background: #181b20;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.5em;
+    padding: 1em 1.1em 1.1em;
+    min-width: 20em;
+    max-width: 26em;
+    color: #eceef0;
+    box-shadow: 0 1.2em 3em rgba(0, 0, 0, 0.55);
+  }
+
+  .cip-seat-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.9em;
+  }
+  .cip-seat-panel-title {
+    font-size: 0.82em;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #9aa2ad;
+  }
+  .cip-seat-close {
+    background: none;
+    border: none;
+    color: #9aa2ad;
+    font-size: 1.4em;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.2em;
+  }
+  .cip-seat-close:hover { color: #eceef0; }
+
+  .cip-seat-car {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.1em 1.1em 0.5em 0.5em;
+    padding: 0.5em;
+    background: rgba(255, 255, 255, 0.025);
+  }
+  .cip-seat-car-nose {
+    text-align: center;
+    font-size: 0.66em;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #6c737d;
+    padding-bottom: 0.5em;
+  }
+  .cip-seat-car-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5em;
+  }
+
+  .cip-seat-slot {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.4em;
+    padding: 0.5em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+    min-height: 5.2em;
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .cip-seat-slot.cip-slot-off { background: transparent; border-style: dashed; }
+  .cip-seat-slot.cip-slot-on { background: rgba(160, 178, 217, 0.1); border-color: rgba(160, 178, 217, 0.4); }
+
+  .cip-seat-slot-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1em;
+    color: inherit;
+    text-align: left;
+    width: 100%;
+  }
+  .cip-seat-slot-name {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #eceef0;
+  }
+  .cip-seat-slot-state {
+    font-size: 0.72em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8b929c;
+  }
+  .cip-seat-slot.cip-slot-on .cip-seat-slot-state { color: #a0b2d9; }
+
+  .cip-seat-slot-driver .cip-seat-slot-name { margin-bottom: -0.3em; }
+
+  .cip-seat-belt-btn {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.3em;
+    background: rgba(255, 255, 255, 0.05);
+    color: #c3c9d1;
+    font-size: 0.7em;
+    padding: 0.3em 0.4em;
+    cursor: pointer;
+    text-align: center;
+    margin-top: auto;
+  }
+  .cip-seat-belt-btn:hover { filter: brightness(1.35); }
+  .cip-seat-slot.cip-restraint-beltedAirbag .cip-seat-belt-btn { background: rgba(143, 217, 160, 0.16); border-color: rgba(143, 217, 160, 0.55); color: #8fd9a0; }
+  .cip-seat-slot.cip-restraint-beltedOnly .cip-seat-belt-btn { background: rgba(224, 208, 176, 0.16); border-color: rgba(224, 208, 176, 0.5); color: #dcd0b8; }
+  .cip-seat-slot.cip-restraint-unbelted .cip-seat-belt-btn { background: rgba(224, 176, 176, 0.16); border-color: rgba(224, 176, 176, 0.5); color: #d9b8b8; }
+
+  .cip-seat-panel-note {
+    margin-top: 0.9em;
+    font-size: 0.72em;
+    line-height: 1.45;
+    color: #8b929c;
+  }
+
+  .cip-occupant-report-block {
+    margin-bottom: 0.9em;
+  }
+  .cip-occupant-report-block:last-child { margin-bottom: 0; }
+
+  .cip-occupant-report-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.25em;
+    margin-bottom: 0.35em;
+  }
+  .cip-occupant-report-who {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #eceef0;
+  }
+  .cip-occupant-report-belt {
+    font-size: 0.72em;
+    color: #8b929c;
+  }
+  .cip-occupant-report-pct {
+    margin-left: auto;
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #eceef0;
+  }
+  .cip-occupant-report-pct.cip-band-minor { color: #8fd9a0; }
+  .cip-occupant-report-pct.cip-band-likely { color: #a8d98f; }
+  .cip-occupant-report-pct.cip-band-treatable { color: #d9d08f; }
+  .cip-occupant-report-pct.cip-band-serious { color: #e3c98f; }
+  .cip-occupant-report-pct.cip-band-severe { color: #e8a86a; }
+  .cip-occupant-report-pct.cip-band-critical { color: #f0a86a; }
+  .cip-occupant-report-pct.cip-band-urgent { color: #ee8055; }
+  .cip-occupant-report-pct.cip-band-grave { color: #e2604f; }
+  .cip-occupant-report-pct.cip-band-fatal { color: #d1443f; }
+
+  .cip-occupant-report-sub {
+    font-size: 0.74em;
+    color: #9aa2ad;
+    margin-bottom: 0.35em;
+  }
+
+  .cip-report-death-cause {
+    color: #e2604f;
+    font-size: 0.9em;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .cip-impact-line {
+    font-size: 0.72em;
+    letter-spacing: 0.02em;
+    color: #9aa2ad;
+    opacity: 0.85;
+    margin: 0.15em 0 0.35em 0;
+    height: 1.25em;
+    line-height: 1.25em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .cip-impact-line-empty { visibility: hidden; }
+
+  .cip-impact-line { display: none !important; }
+  .cip-seat-condition { margin-top: 0.4em; }
+
+  .cip-occupant-report-none {
+    font-size: 0.78em;
+    color: #6c737d;
+    padding: 0.2em 0 0.1em;
+  }
+
+  .cip-injury-title { font-weight: 600; }
+  .cip-why-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15em;
+    height: 1.15em;
+    margin-left: 0.4em;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.06);
+    color: #b6bdc7;
+    font-size: 0.8em;
+    line-height: 1;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  .cip-why-btn:hover { border-color: rgba(255, 255, 255, 0.6); color: #eceef0; }
+  .cip-why-btn.cip-why-open { background: rgba(255, 255, 255, 0.2); color: #eceef0; }
+  .cip-injury-why {
+    margin-top: 0.35em;
+    padding: 0.4em 0.55em;
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 0 0.25em 0.25em 0;
+    font-size: 0.88em;
+    line-height: 1.4;
+  }
+  .cip-why-cause { color: #eceef0; }
+  .cip-why-plain { color: #c3c9d1; margin-top: 0.25em; }
+  .cip-why-clinical { color: #9aa2ad; margin-top: 0.25em; }
+  .cip-why-meta { color: #79808a; margin-top: 0.25em; font-size: 0.9em; }
+  .cip-why-caveat { color: #79808a; margin-top: 0.25em; font-style: italic; }
+
+  .cip-occupant-report.cip-report-2x2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8em;
+    align-items: start;
+  }
+  .cip-report-2x2 .cip-occupant-report-block {
+    margin-bottom: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.4em;
+    padding: 0.6em 0.7em;
+    background: rgba(255, 255, 255, 0.025);
+    min-width: 0;
+  }
+  .cip-occupant-report-block.cip-report-card-dead {
+    border-color: rgba(209, 68, 63, 0.45);
+    background: rgba(209, 68, 63, 0.06);
+  }
+
+  .cip-occupant-report-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.35em;
+    margin-bottom: 0.4em;
+  }
+  .cip-report-figure {
+    flex: 0 0 auto;
+    width: 3.4em;
+    height: 6.8em;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .cip-report-figure svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+  }
+  .cip-report-card-dead .cip-report-figure svg { filter: brightness(0.82); }
+  .cip-report-ident { flex: 1 1 0; min-width: 0; }
+  .cip-report-ident-top {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+  }
+  .cip-report-state { display: block; color: #c3c9d1; font-size: 0.95em; }
+  .cip-report-meta { display: block; color: #79808a; }
+
+</style>
+
+<div class="cip-app" ng-class="['cip-state-' + hudState, expanded ? 'cip-expanded' : '', fullscreen ? 'cip-fullscreen' : '']" ng-style="appSizingStyle()">
+
+  <div class="cip-realistic-overlay cip-vision-vignette-overlay" ng-show="settings.overlaysEnabled && visionOverlaysVisible()" ng-style="visionVignetteStyle"></div>
+  <div class="cip-realistic-overlay cip-vision-blur-overlay" ng-show="visionOverlaysVisible()" ng-style="visionBlurStyle"></div>
+
+  <div class="cip-realistic-overlay cip-dizzy-overlay" ng-show="settings.overlaysEnabled && dizzyFraction > 0 && visionOverlaysVisible()" ng-style="dizzyStyle"></div>
+  <div class="cip-realistic-overlay cip-pain-pulse-overlay" ng-show="settings.overlaysEnabled && painPulseActive && visionOverlaysVisible()" ng-style="painPulseStyle"></div>
+
+  <div class="cip-realistic-overlay cip-impact-overlay" ng-show="realisticMode && settings.overlaysEnabled"><div class="cip-impact-inner"><div class="cip-fx-vig"></div><div class="cip-fx-flash"></div></div></div>
+  <div class="cip-realistic-overlay cip-unconscious-overlay" ng-show="realisticMode && unconsciousFadeVisible && !viewingReportPostMortem" ng-class="{'cip-active': unconsciousFadeActive, 'cip-instant': unconsciousFadeActive && blackoutProvisional, 'cip-recovering': !unconsciousFadeActive && !unconsciousCancelling, 'cip-cancelling': !unconsciousFadeActive && unconsciousCancelling}" ng-style="{opacity: (unconsciousFadeVisible ? blackoutFraction() : 0)}"><div class="cip-fx-vig"></div><div class="cip-fx-black"></div><div class="cip-fx-flash"></div></div>
+
+  <div class="cip-realistic-overlay cip-shock-blackout-overlay" ng-show="realisticMode && !viewingReportPostMortem" ng-class="{'cip-visible': shockBlackoutVisible}" ng-style="{opacity: (shockBlackoutVisible ? blackoutFraction() : 0)}"></div>
+
+  <div class="cip-realistic-overlay cip-death-overlay" ng-show="realisticMode && deathFadeActive" ng-class="{'cip-active': deathFadeActive && !viewingReportPostMortem && !deathScreenDismissed}" ng-style="{opacity: ((deathFadeActive && !viewingReportPostMortem && !deathScreenDismissed) ? blackoutFraction() : 0)}">
+    <div class="cip-fx-vig"></div><div class="cip-fx-black"></div><div class="cip-fx-flash"></div>
+    <div class="cip-death-text">{{ fatalInjuryText }}</div>
+
+    <div class="cip-death-btn-row">
+      <button type="button" class="cip-death-report-btn" data-cip-control="deathReport" ng-if="!viewingReportPostMortem && !deathScreenDismissed" ng-click="openDeathReport()">View full report</button>
+
+      <button type="button" class="cip-death-exit-btn" data-cip-control="deathExit" ng-if="!viewingReportPostMortem && !deathScreenDismissed" ng-click="dismissDeathScreen()">Exit</button>
+    </div>
+  </div>
+
+  <div class="cip-seat-overlay" ng-show="seatPanelOpen" ng-click="toggleSeatPanel()">
+    <div class="cip-seat-panel" ng-click="$event.stopPropagation()">
+      <div class="cip-seat-panel-head">
+        <span class="cip-seat-panel-title">Who is in the car<span class="cip-vehicle-summary" ng-if="vehicleSummary()"> &middot; {{ vehicleSummary() }}</span></span>
+        <button type="button" class="cip-seat-close" ng-click="toggleSeatPanel()" aria-label="Close the seat panel">&times;</button>
+      </div>
+
+      <div class="cip-seat-car">
+        <div class="cip-seat-car-nose">front</div>
+        <div class="cip-seat-car-grid">
+
+          <div class="cip-seat-slot cip-seat-slot-driver cip-slot-on" ng-class="'cip-restraint-' + seatByKey.driver.restraint">
+            <div class="cip-seat-slot-name">Driver</div>
+            <div class="cip-seat-slot-state">always you</div>
+            <div class="cip-gear-row" ng-click="$event.stopPropagation()"><div class="cip-gear-dd"><button type="button" class="cip-gear-select" ng-click="toggleGearMenu('driver'); $event.stopPropagation()"><span class="cip-gear-current">{{ gearLabelOnly('driver') }}</span><span class="cip-gear-caret">&#9662;</span></button><div class="cip-gear-menu" ng-if="gearMenuOpen === 'driver'"><div class="cip-gear-opt" ng-repeat="g in gearOptions" ng-class="{'cip-gear-opt-on': seatGearKey('driver') === g.key}" ng-click="pickGear('driver', g.key); $event.stopPropagation()">{{ g.label }}</div></div></div><button type="button" class="cip-airbag-btn" ng-if="seatAirbagAvailable('driver')" ng-class="{'cip-airbag-on': seatAirbagOn('driver')}" ng-click="toggleSeatAirbag('driver'); $event.stopPropagation()">Airbag {{ seatAirbagOn('driver') ? 'on' : 'off' }}</button></div>
+          </div>
+
+          <div class="cip-seat-slot"
+               ng-class="[seatByKey.frontRight.occupied ? 'cip-slot-on' : 'cip-slot-off', 'cip-restraint-' + seatByKey.frontRight.restraint]">
+            <button type="button" class="cip-seat-slot-toggle"
+                    ng-disabled="false"
+                    ng-click="toggleSeatOccupied('frontRight'); $event.stopPropagation()"
+                    aria-label="{{ seatByKey.frontRight.occupied ? 'Remove the front passenger' : 'Add a front passenger' }}">
+              <span class="cip-seat-slot-name">{{ driverOnRight ? 'Front L' : 'Front R' }}</span>
+              <span class="cip-seat-slot-state">{{ seatByKey.frontRight.available === false ? 'no seat found -- tap to add one' : (seatByKey.frontRight.occupied ? 'seated' : 'empty') }}</span>
+            </button>
+            <div class="cip-gear-row" ng-show="seatByKey.frontRight.occupied" ng-click="$event.stopPropagation()"><div class="cip-gear-dd"><button type="button" class="cip-gear-select" ng-click="toggleGearMenu('frontRight'); $event.stopPropagation()"><span class="cip-gear-current">{{ gearLabelOnly('frontRight') }}</span><span class="cip-gear-caret">&#9662;</span></button><div class="cip-gear-menu" ng-if="gearMenuOpen === 'frontRight'"><div class="cip-gear-opt" ng-repeat="g in gearOptions" ng-class="{'cip-gear-opt-on': seatGearKey('frontRight') === g.key}" ng-click="pickGear('frontRight', g.key); $event.stopPropagation()">{{ g.label }}</div></div></div><button type="button" class="cip-airbag-btn" ng-if="seatAirbagAvailable('frontRight')" ng-class="{'cip-airbag-on': seatAirbagOn('frontRight')}" ng-click="toggleSeatAirbag('frontRight'); $event.stopPropagation()">Airbag {{ seatAirbagOn('frontRight') ? 'on' : 'off' }}</button></div>
+          </div>
+
+          <div class="cip-seat-slot"
+               ng-class="[seatByKey.rearLeft.occupied ? 'cip-slot-on' : 'cip-slot-off', 'cip-restraint-' + seatByKey.rearLeft.restraint]">
+            <button type="button" class="cip-seat-slot-toggle"
+                    ng-disabled="false"
+                    ng-click="toggleSeatOccupied('rearLeft'); $event.stopPropagation()"
+                    aria-label="{{ seatByKey.rearLeft.occupied ? 'Remove the rear left passenger' : 'Add a rear left passenger' }}">
+              <span class="cip-seat-slot-name">Rear L</span>
+              <span class="cip-seat-slot-state">{{ seatByKey.rearLeft.available === false ? 'no seat found -- tap to add one' : (seatByKey.rearLeft.occupied ? 'seated' : 'empty') }}</span>
+            </button>
+            <div class="cip-gear-row" ng-show="seatByKey.rearLeft.occupied" ng-click="$event.stopPropagation()"><div class="cip-gear-dd"><button type="button" class="cip-gear-select" ng-click="toggleGearMenu('rearLeft'); $event.stopPropagation()"><span class="cip-gear-current">{{ gearLabelOnly('rearLeft') }}</span><span class="cip-gear-caret">&#9662;</span></button><div class="cip-gear-menu cip-gear-menu-up" ng-if="gearMenuOpen === 'rearLeft'"><div class="cip-gear-opt" ng-repeat="g in gearOptions" ng-class="{'cip-gear-opt-on': seatGearKey('rearLeft') === g.key}" ng-click="pickGear('rearLeft', g.key); $event.stopPropagation()">{{ g.label }}</div></div></div><button type="button" class="cip-airbag-btn" ng-if="seatAirbagAvailable('rearLeft')" ng-class="{'cip-airbag-on': seatAirbagOn('rearLeft')}" ng-click="toggleSeatAirbag('rearLeft'); $event.stopPropagation()">Airbag {{ seatAirbagOn('rearLeft') ? 'on' : 'off' }}</button></div>
+          </div>
+
+          <div class="cip-seat-slot"
+               ng-class="[seatByKey.rearRight.occupied ? 'cip-slot-on' : 'cip-slot-off', 'cip-restraint-' + seatByKey.rearRight.restraint]">
+            <button type="button" class="cip-seat-slot-toggle"
+                    ng-disabled="false"
+                    ng-click="toggleSeatOccupied('rearRight'); $event.stopPropagation()"
+                    aria-label="{{ seatByKey.rearRight.occupied ? 'Remove the rear right passenger' : 'Add a rear right passenger' }}">
+              <span class="cip-seat-slot-name">Rear R</span>
+              <span class="cip-seat-slot-state">{{ seatByKey.rearRight.available === false ? 'no seat found -- tap to add one' : (seatByKey.rearRight.occupied ? 'seated' : 'empty') }}</span>
+            </button>
+            <div class="cip-gear-row" ng-show="seatByKey.rearRight.occupied" ng-click="$event.stopPropagation()"><div class="cip-gear-dd"><button type="button" class="cip-gear-select" ng-click="toggleGearMenu('rearRight'); $event.stopPropagation()"><span class="cip-gear-current">{{ gearLabelOnly('rearRight') }}</span><span class="cip-gear-caret">&#9662;</span></button><div class="cip-gear-menu cip-gear-menu-up" ng-if="gearMenuOpen === 'rearRight'"><div class="cip-gear-opt" ng-repeat="g in gearOptions" ng-class="{'cip-gear-opt-on': seatGearKey('rearRight') === g.key}" ng-click="pickGear('rearRight', g.key); $event.stopPropagation()">{{ g.label }}</div></div></div><button type="button" class="cip-airbag-btn" ng-if="seatAirbagAvailable('rearRight')" ng-class="{'cip-airbag-on': seatAirbagOn('rearRight')}" ng-click="toggleSeatAirbag('rearRight'); $event.stopPropagation()">Airbag {{ seatAirbagOn('rearRight') ? 'on' : 'off' }}</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cip-seat-panel-note">Rear seats have belts but no airbag. A belt change applies to your next crash, not the one already in the report.</div>
+    </div>
+  </div>
+
+  <div class="cip-settings-overlay" ng-show="settingsOpen" ng-click="toggleSettings()">
+    <div class="cip-settings-panel" ng-click="$event.stopPropagation()">
+      <div class="cip-settings-header">
+        <span class="cip-settings-title">Settings</span>
+        <button type="button" class="cip-settings-close-btn" data-cip-control="settingsClose" ng-click="toggleSettings()" title="Close">&times;</button>
+      </div>
+
+      <div class="cip-settings-row">
+        <div class="cip-settings-row-title">Language</div>
+        <div class="cip-settings-segmented cip-lang-grid cip-notranslate" role="radiogroup" aria-label="Language">
+          <button type="button" class="cip-settings-segmented-btn" ng-repeat="l in languages" ng-class="{'cip-active': (settings.language || 'en') === l[0]}" ng-click="setLanguage(l[0])" role="radio">{{ l[1] }}</button>
+        </div>
+      </div>
+
+      <div class="cip-settings-row">
+        <label class="cip-settings-row-label">
+          <input type="checkbox" ng-model="settings.blackoutEnabled">
+          Blackout
+        </label>
+        <div class="cip-settings-row-desc">Screen fades to black for unconsciousness, shock, and death.</div>
+        <div class="cip-settings-slider-row">
+          <input type="range" min="0" max="100" step="5" ng-model="settings.blackoutOpacity" ng-disabled="!settings.blackoutEnabled">
+          <span class="cip-settings-slider-value">{{ settings.blackoutOpacity }}%</span>
+        </div>
+      </div>
+
+      <div class="cip-settings-row">
+        <label class="cip-settings-row-label">
+          <input type="checkbox" ng-model="settings.blurEnabled">
+          Blur
+        </label>
+        <div class="cip-settings-row-desc">Vision blur and desaturation from head injury and blood loss.</div>
+        <div class="cip-settings-slider-row">
+          <input type="range" min="0" max="100" step="5" ng-model="settings.blurIntensity" ng-disabled="!settings.blurEnabled">
+          <span class="cip-settings-slider-value">{{ settings.blurIntensity }}%</span>
+        </div>
+
+        <label class="cip-settings-row-label" style="margin-top: 0.5em;">
+          <input type="checkbox" ng-model="settings.blurUiApps">
+          Blur UI apps
+        </label>
+        <div class="cip-settings-row-desc">Off (default): blur never covers this app's own notification popups, and never covers the crash report regardless of this setting. On: blur can also show over the notification popups, for a more immersive look.</div>
+      </div>
+
+      <div class="cip-settings-section-title">Camera</div>
+      <div class="cip-settings-row cip-cam-row">
+        <label class="cip-cam-head">
+          <span class="cip-cam-name">Camera shake</span>
+          <input type="checkbox" class="cip-switch-input" ng-model="settings.shakeOn"><span class="cip-switch" aria-hidden="true"></span>
+        </label>
+        <div class="cip-cam-desc">Shakes the camera in crashes, on rough ground and when you land. Harder hit, harder shake. Off: no shaking at all.</div>
+        <div class="cip-cam-slider" ng-class="{'cip-off': !settings.shakeOn}">
+          <input type="range" min="0" max="200" step="10" ng-model="settings.shakeIntensity" ng-disabled="!settings.shakeOn">
+          <span class="cip-settings-slider-value">{{ settings.shakeIntensity }}%</span>
+        </div>
+      </div>
+      <div class="cip-settings-row cip-cam-row">
+        <label class="cip-cam-head">
+          <span class="cip-cam-name">Dynamic camera</span>
+          <input type="checkbox" class="cip-switch-input" ng-model="settings.dynamicCamera"><span class="cip-switch" aria-hidden="true"></span>
+        </label>
+        <div class="cip-cam-desc">The camera leans with the car when you brake, turn and roll over. It never shakes.</div>
+        <div class="cip-cam-slider" ng-class="{'cip-off': !settings.dynamicCamera}">
+          <input type="range" min="0" max="100" step="5" ng-model="settings.dynamicCameraStrength" ng-disabled="!settings.dynamicCamera">
+          <span class="cip-settings-slider-value">{{ settings.dynamicCameraStrength }}%</span>
+        </div>
+        <div class="cip-cam-sub" ng-class="{'cip-off': !settings.dynamicCamera}">
+          <div class="cip-cam-name cip-cam-subname">Body movement (driver view)</div>
+          <div class="cip-cam-desc">Your head is thrown around in corners and under braking. Much more without a seatbelt.</div>
+          <div class="cip-cam-slider">
+            <input type="range" min="0" max="100" step="5" ng-model="settings.bodySway" ng-disabled="!settings.dynamicCamera">
+            <span class="cip-settings-slider-value">{{ settings.bodySway }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cip-settings-row">
+        <label class="cip-settings-row-label">
+          <input type="checkbox" ng-model="settings.overlaysEnabled">
+          Overlays
+        </label>
+        <div class="cip-settings-row-desc">Vision vignette, dizzy wobble, and pain pulse.</div>
+      </div>
+
+      <div class="cip-settings-row" ng-if="debugSampleCount !== null">
+        <label class="cip-settings-row-label">
+          <input type="checkbox" ng-model="debugPanelVisible">
+          Debug readout
+        </label>
+        <div class="cip-settings-row-desc">Latency/deltaV/AIS/ISS technical readout -- useful if you're troubleshooting or filing a bug report.</div>
+      </div>
+
+      <div class="cip-settings-footer">Blackout, blur, and overlay settings only affect Realistic Mode's screen effects, which still needs to be ON (main controls row) to see them. Screen shake is independent: set it to "Always on" to use it without the rest of Realistic Mode. Audio and vehicle-control consequences are unaffected by anything on this panel.</div>
+    </div>
+  </div>
+
+  <div class="cip-headline-survival" ng-if="survival && survivalBandHasContent && !multiOccupant()" ng-class="'cip-band-' + survivalBandKey(survival.survivalProbabilityPercent)">
+    <div class="cip-headline-top-row">
+      <span class="cip-headline-iss-value">{{ pct(survival.survivalProbabilityPercent) }}%</span>
+      <span class="cip-headline-outlook-badge">{{ survivalBandLabel(survival.survivalProbabilityPercent) }}</span>
+    </div>
+    <div class="cip-headline-bar-track">
+      <div class="cip-headline-bar-fill" ng-style="{width: survival.survivalProbabilityPercent + '%'}"></div>
+    </div>
+
+    <div class="cip-headline-iss-subtext" ng-if="iss" title="ISS {{ iss.iss }} -- {{ iss.isMajorTrauma ? 'at/above' : 'below' }} the conventional major-trauma threshold (ISS>=16)">
+      ISS {{ iss.iss }}<span ng-if="iss.isMajorTrauma"> &middot; major trauma</span>
+    </div>
+  </div>
+
+  <div class="cip-body-row">
+
+  <div class="cip-content-col" ng-if="hudState !== 'idle' && !compactBodiesOnly()" ng-style="contentColStyle()">
+
+    <div class="cip-notif-stack" ng-if="hudState === 'notifying' && !multiOccupant()">
+      <div
+        class="cip-notif-row"
+        ng-repeat="n in notifications track by n.id"
+        ng-class="{'cip-notif-visible': n.visible, 'cip-notif-fading': n.fading}"
+        ng-style="{'border-color': n.tintBorder}"
+      >
+        <span class="cip-notif-glyph" ng-bind-html="n.glyphHtml"></span>
+        <span class="cip-notif-text">{{ n.label }}</span>
+      </div>
+    </div>
+
+    <div class="cip-report-panel" ng-if="hudState === 'report'">
+
+      <div class="cip-occupant-report" ng-if="multiOccupant()" ng-class="{'cip-report-2x2': fullscreen}">
+        <div class="cip-occupant-report-block" ng-repeat="rs in reportSeats track by rs.key" ng-class="{'cip-report-card-dead': rs.dead}">
+          <div class="cip-occupant-report-head">
+            <div class="cip-report-figure" data-cip-report-figure="{{ rs.key }}" ng-show="fullscreen"></div>
+            <div class="cip-report-ident">
+              <div class="cip-report-ident-top">
+                <span class="cip-occupant-report-who">{{ rs.label }}</span>
+                <span class="cip-occupant-report-pct"
+                      ng-show="rs.survivalPercent !== null"
+                      ng-class="'cip-band-' + seatBandKey(rs.survivalPercent)">{{ pct(rs.survivalPercent) }}%</span>
+              </div>
+              <div class="cip-occupant-report-sub" ng-show="rs.deathCause">
+                <span class="cip-report-death-cause">{{ rs.deathCause }}</span>
+              </div>
+              <div class="cip-occupant-report-sub">
+                <span class="cip-report-state" ng-show="rs.stateText">{{ rs.stateText }}</span>
+                <span class="cip-report-meta">{{ rs.restraintLabel }}<span ng-show="rs.iss"> &middot; ISS {{ rs.iss }}</span></span>
+                <span class="cip-report-meta" ng-show="fullscreen && rs.costUsd !== null">{{ rs.costUsd | currency:'$':0 }}<span ng-show="rs.careTime && rs.careTime.hours > 0"> &middot; {{ formatCareTime(rs.careTime) }}</span><span class="cip-care-stay" ng-show="formatCareStay(rs.careTime)"> {{ formatCareStay(rs.careTime) }}</span></span>
+              </div>
+
+              <div class="cip-occupant-report-sub" ng-show="rs.care">
+                <span class="cip-care-badge" ng-class="'cip-care-' + rs.care.key">{{ rs.care.text }}</span>
+              </div>
+              <div class="cip-occupant-report-sub cip-report-vitals" ng-show="!rs.dead && (rs.bleedMlMin >= 1 || rs.bloodLostMl >= 1)">
+                <span class="cip-report-meta">Bleeding {{ rs.bleedMlMin | number:0 }} mL/min &middot; {{ rs.bloodLostMl | number:0 }} mL lost</span>
+              </div>
+              <div class="cip-occupant-report-sub cip-report-vitals" ng-show="rs.peakG">
+                <span class="cip-report-meta">Peak force {{ rs.peakG }} g</span>
+              </div>
+            </div>
+          </div>
+          <div class="cip-injury-rows">
+            <div
+              class="cip-injury-row"
+              ng-repeat="inj in rs.injuries track by inj.id"
+              ng-style="{'background-color': inj.tintBg, 'border-color': inj.tintBorder}"
+            >
+              <span class="cip-injury-glyph" ng-bind-html="inj.glyphHtml"></span>
+              <div class="cip-injury-text">
+                <div class="cip-injury-plain">
+                  <span class="cip-injury-title">{{ inj.title }}</span><span class="cip-sev-word" ng-if="inj.severityWord"> &middot; {{ inj.severityWord }}</span><button
+                    type="button"
+                    class="cip-why-btn"
+                    ng-class="{'cip-why-open': inj.whyOpen}"
+                    ng-click="toggleWhy(inj); $event.stopPropagation()"
+                    aria-label="Why did this happen?"
+                  >?</button>
+                </div>
+
+                <div class="cip-injury-why" ng-if="inj.whyOpen">
+                  <div class="cip-why-cause" ng-if="inj.cause">{{ inj.cause }}</div>
+                  <div class="cip-why-plain" ng-if="inj.plainDescription">{{ inj.plainDescription }}</div>
+                  <div class="cip-why-meta" ng-if="inj.medicalName && inj.medicalName !== inj.title">Medical name: {{ inj.medicalName }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cip-occupant-report-none" ng-if="!rs.injuries.length">No injuries.</div>
+
+          <div class="cip-systemic-box cip-seat-condition" ng-if="rs.condition && rs.condition.length">
+            <div class="cip-section-label">Condition</div>
+            <div class="cip-systemic-grid">
+              <div class="cip-systemic-chip" ng-repeat="s in rs.condition track by s.key"
+                ng-class="'cip-systemic-' + s.tint" title="{{ s.plainDescription }}"
+              ><span class="cip-systemic-chip-label">{{ s.label }}</span>{{ s.levelText }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cip-section-label" ng-if="!multiOccupant()">Injuries</div>
+      <div class="cip-injury-rows" ng-if="!multiOccupant()">
+        <div
+          class="cip-injury-row"
+          ng-repeat="inj in reportInjuries track by inj.id"
+          ng-style="{'background-color': inj.tintBg, 'border-color': inj.tintBorder}"
+        >
+          <span class="cip-injury-glyph" ng-bind-html="inj.glyphHtml"></span>
+          <div class="cip-injury-text">
+
+            <div class="cip-injury-plain">
+              <span class="cip-injury-title">{{ inj.title }}</span><span class="cip-sev-word" ng-if="inj.severityWord"> &middot; {{ inj.severityWord }}</span><button
+                type="button"
+                class="cip-why-btn"
+                ng-class="{'cip-why-open': inj.whyOpen}"
+                ng-click="toggleWhy(inj); $event.stopPropagation()"
+                aria-label="Why did this happen?"
+              >?</button>
+            </div>
+            <div class="cip-injury-why" ng-if="inj.whyOpen">
+              <div class="cip-why-cause" ng-if="inj.cause">{{ inj.cause }}</div>
+              <div class="cip-why-plain" ng-if="inj.plainDescription">{{ inj.plainDescription }}</div>
+              <div class="cip-why-meta" ng-if="inj.medicalName && inj.medicalName !== inj.title">Medical name: {{ inj.medicalName }}</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="cip-verdict" ng-if="survival && survivalBandHasContent && !multiOccupant()" ng-class="'cip-band-' + survivalBandKey(survival.survivalProbabilityPercent)">
+        <div class="cip-verdict-badge">{{ pct(survival.survivalProbabilityPercent) }}% &mdash; {{ survivalBandLabel(survival.survivalProbabilityPercent) }}</div>
+        <div class="cip-verdict-summary">{{ survival.plainSummary }}</div>
+        <div style="font-size:0.8em;opacity:0.7">Simulation estimate, not a clinical survival probability.</div>
+      </div>
+      <div class="cip-iss-row" ng-if="!multiOccupant() && iss">
+        <span ng-if="fullscreen || expanded" title="Simulated outcome, not a medical diagnosis. Original risk estimates remain in injury details.">Scenario {{ patientSeed }}</span>
+        <span class="cip-iss-label">ISS</span>
+        <span class="cip-iss-value">{{ iss.iss }}</span>
+        <span class="cip-iss-trauma-flag" ng-if="iss.isMajorTrauma">major trauma</span>
+      </div>
+
+      <div class="cip-iss-row" ng-if="!multiOccupant() && cost">
+        <span class="cip-iss-label">Est. cost</span>
+        <span class="cip-iss-value">{{ cost.costUsd | currency:'$':0 }}</span>
+      </div>
+      <div class="cip-iss-row" ng-if="!multiOccupant() && recovery">
+        <span class="cip-iss-label">Recovery</span>
+        <span class="cip-iss-value">{{ formatCareTime(recovery) }}<span class="cip-care-stay" ng-show="formatCareStay(recovery)"> {{ formatCareStay(recovery) }}</span></span>
+      </div>
+
+      <div class="cip-restraint-row" ng-if="!multiOccupant() && reportRestraintConfigLabel">
+        <span class="cip-iss-label">Restraint</span>
+        <span class="cip-iss-value">{{ reportRestraintConfigLabel }}</span>
+      </div>
+      <div class="cip-iss-row" ng-if="survival && (fullscreen || expanded)">
+        <span class="cip-iss-label">Bleeding estimate</span>
+        <span>{{ patientBleedMlMin | number:0 }} mL/min; {{ patientBloodLostMl | number:0 }} mL lost (unverified)</span>
+      </div>
+      <div class="cip-iss-row" ng-if="debugRawPeakG != null && (fullscreen || expanded)">
+        <span class="cip-iss-label">Vehicle load</span>
+        <span>{{ debugRawPeakG | number:1 }} g peak (not measured head g)</span>
+      </div>
+      <div ng-repeat="e in debugEvents track by e.index" ng-if="false" style="font-size:0.85em;color:#adb5bd">
+        Impact {{ e.index + 1 }}: {{ e.impactSide }}, planar delta-V {{ e.deltaVMs | number:1 }} m/s, vertical {{ e.verticalDeltaVMs | number:1 }} m/s, {{ e.durationMs | number:0 }} ms
+        <span ng-if="e.hicIndex != null"><br>Modeled: HIC index {{ e.hicIndex | number:0 }}, chest 3ms {{ e.chest3msG | number:1 }} g, femur force index {{ e.femurForceIndexN / 1000 | number:1 }} kN. Indices are not full-bandwidth test-dummy measurements.</span>
+      </div>
+
+      <div class="cip-systemic-panel" ng-if="!multiOccupant() && systemicEffectsView.length">
+        <div class="cip-section-label">Condition</div>
+        <div class="cip-systemic-box">
+          <div class="cip-systemic-grid">
+            <div
+              class="cip-systemic-chip"
+              ng-repeat="s in systemicEffectsView track by s.key"
+              ng-class="'cip-systemic-' + s.tint"
+              title="{{ s.plainDescription }}"
+            ><span class="cip-systemic-chip-label">{{ s.label }}</span>{{ s.levelText }}</div>
+          </div>
+          <div class="cip-systemic-detail" ng-if="expanded">
+            <div class="cip-systemic-detail-line" ng-repeat="s in systemicEffectsView track by s.key">{{ s.plainDescription }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cip-figure-col" ng-class="{'cip-col-multi': multiOccupant()}" ng-style="figureColStyle()">
+
+    <div class="cip-figure-chip-stack">
+
+      <div class="cip-figure-chip cip-occupant-state-chip" ng-if="occupantStateText && !multiOccupant()">{{ occupantStateText }}</div>
+
+    </div>
+
+    <div class="cip-occupant-grid" ng-class="{'cip-multi': multiOccupant()}" ng-style="occupantGridStyle()">
+
+      <div class="cip-occupant-cell" ng-style="seatCellStyle('driver')" ng-class="{'cip-seat-dead': seatByKey.driver.dead}">
+        <div
+          class="cip-figure-body-target"
+          ng-class="{'cip-figure-dead': survival && survival.outlook === 'notSurvivable', 'cip-figure-clickable': hudState === 'report'}"
+          ng-click="openReport(); $event.stopPropagation()"
+          ng-style="figureBodyTargetStyle()"
+        ></div>
+        <div class="cip-seat-readout" ng-show="multiOccupant()">
+          <span class="cip-seat-pct"
+                ng-show="seatByKey.driver.survivalPercent !== null"
+                ng-class="'cip-band-' + seatBandKey(seatByKey.driver.survivalPercent)"
+          >{{ pct(seatByKey.driver.survivalPercent) }}%</span>
+          <span class="cip-seat-state" ng-show="seatByKey.driver.stateText">{{ seatByKey.driver.stateText }}</span>
+          <span class="cip-seat-label">Driver</span>
+        </div>
+      </div>
+
+      <div class="cip-occupant-cell"
+           ng-show="seatCellVisible('frontRight')"
+           ng-style="seatCellStyle('frontRight')"
+           ng-class="{'cip-seat-empty': !seatByKey.frontRight.occupied, 'cip-seat-dead': seatByKey.frontRight.dead}">
+        <div class="cip-pax-body-target" data-cip-seat-figure="frontRight" ng-style="figureBodyTargetStyle()"></div>
+        <div class="cip-seat-readout">
+          <span class="cip-seat-pct"
+                ng-show="seatByKey.frontRight.occupied && seatByKey.frontRight.survivalPercent !== null"
+                ng-class="'cip-band-' + seatBandKey(seatByKey.frontRight.survivalPercent)"
+          >{{ pct(seatByKey.frontRight.survivalPercent) }}%</span>
+          <span class="cip-seat-state" ng-show="seatByKey.frontRight.stateText">{{ seatByKey.frontRight.stateText }}</span>
+          <span class="cip-seat-label">{{ seatByKey.frontRight.occupied ? (driverOnRight ? 'Front L' : 'Front R') : 'Empty' }}</span>
+        </div>
+      </div>
+
+      <div class="cip-occupant-cell"
+           ng-show="seatCellVisible('rearLeft')"
+           ng-style="seatCellStyle('rearLeft')"
+           ng-class="{'cip-seat-empty': !seatByKey.rearLeft.occupied, 'cip-seat-dead': seatByKey.rearLeft.dead}">
+        <div class="cip-pax-body-target" data-cip-seat-figure="rearLeft" ng-style="figureBodyTargetStyle()"></div>
+        <div class="cip-seat-readout">
+          <span class="cip-seat-pct"
+                ng-show="seatByKey.rearLeft.occupied && seatByKey.rearLeft.survivalPercent !== null"
+                ng-class="'cip-band-' + seatBandKey(seatByKey.rearLeft.survivalPercent)"
+          >{{ pct(seatByKey.rearLeft.survivalPercent) }}%</span>
+          <span class="cip-seat-state" ng-show="seatByKey.rearLeft.stateText">{{ seatByKey.rearLeft.stateText }}</span>
+          <span class="cip-seat-label">{{ seatByKey.rearLeft.occupied ? 'Rear L' : 'Empty' }}</span>
+        </div>
+      </div>
+
+      <div class="cip-occupant-cell"
+           ng-show="seatCellVisible('rearRight')"
+           ng-style="seatCellStyle('rearRight')"
+           ng-class="{'cip-seat-empty': !seatByKey.rearRight.occupied, 'cip-seat-dead': seatByKey.rearRight.dead}">
+        <div class="cip-pax-body-target" data-cip-seat-figure="rearRight" ng-style="figureBodyTargetStyle()"></div>
+        <div class="cip-seat-readout">
+          <span class="cip-seat-pct"
+                ng-show="seatByKey.rearRight.occupied && seatByKey.rearRight.survivalPercent !== null"
+                ng-class="'cip-band-' + seatBandKey(seatByKey.rearRight.survivalPercent)"
+          >{{ pct(seatByKey.rearRight.survivalPercent) }}%</span>
+          <span class="cip-seat-state" ng-show="seatByKey.rearRight.stateText">{{ seatByKey.rearRight.stateText }}</span>
+          <span class="cip-seat-label">{{ seatByKey.rearRight.occupied ? 'Rear R' : 'Empty' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cip-impact-line" ng-class="{'cip-impact-line-empty': !impactLine}">{{ impactLine }}</div>
+    <div class="cip-figure-controls">
+
+      <button
+        type="button"
+        class="cip-ctrl-btn cip-ctrl-seats"
+        data-cip-control="seats"
+        ng-class="{'cip-ctrl-on': multiOccupant()}"
+        ng-click="toggleSeatPanel(); $event.stopPropagation()"
+        data-tip="Passengers: {{ occupantCount() }} in the car"
+        aria-label="Passengers: {{ occupantCount() }} occupants. Opens the seat panel to add or remove passengers and set each one's belt."
+      ><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="6.2" r="2.6"/><path d="M2.4 16.5c.4-3 2.2-4.6 4.6-4.6s4.2 1.6 4.6 4.6"/><circle cx="14.2" cy="7.2" r="2.1"/><path d="M12.6 12.2c.5-.2 1-.3 1.6-.3 2 0 3.5 1.4 3.9 4"/></svg><span class="cip-ctrl-count">{{ occupantCount() }}</span></button>
+
+      <button
+        type="button"
+        class="cip-ctrl-btn cip-ctrl-realistic"
+        data-cip-control="realisticMode"
+        ng-class="{'cip-ctrl-on': realisticMode}"
+        ng-click="toggleRealisticMode(); $event.stopPropagation()"
+        data-tip="Realistic mode: {{ realisticMode ? 'on' : 'off' }}"
+        aria-label="Realistic mode is {{ realisticMode ? 'on' : 'off' }}. Injuries affect the screen, audio and vehicle control."
+      ><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M1.5 10.5h3.6l1.8-4.2 3 8.6 2.4-6.4 1.3 2h4.9"/></svg></button>
+
+      <button
+        type="button"
+        class="cip-ctrl-btn cip-ctrl-medkit"
+        data-cip-control="medkit"
+        ng-if="realisticMode"
+        ng-class="{'cip-disabled': !canUseMedKit(), 'cip-ctrl-medkit-busy': medKitBusy, 'cip-ctrl-medkit-spent': !medKitAvailable && !medKitBusy}"
+        ng-click="useMedKit(); $event.stopPropagation()"
+        data-tip="{{ medKitTip() }}"
+        aria-label="{{ medKitTitle() }}"
+      ><span ng-if="medKitBusy">…</span><span ng-if="!medKitBusy" class="cip-ic-wrap"><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="5.5" width="15" height="11" rx="1.8"/><path d="M7.5 5.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5M10 8.4v5.2M7.4 11h5.2"/></svg></span></button>
+
+      <button
+        type="button"
+        class="cip-ctrl-btn cip-ctrl-settings"
+        data-cip-control="settings"
+        ng-click="toggleSettings(); $event.stopPropagation()"
+        data-tip="Settings"
+        aria-label="Settings: blackout, blur, screen shake and overlays."
+      ><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h8M15 5.5h2M3 10h2M9 10h8M3 14.5h6M13 14.5h4"/><circle cx="13" cy="5.5" r="1.8"/><circle cx="7" cy="10" r="1.8"/><circle cx="11" cy="14.5" r="1.8"/></svg></button>
+
+      <button
+        type="button"
+        class="cip-ctrl-btn cip-ctrl-expand"
+        data-cip-control="expand"
+        ng-class="{'cip-ctrl-on': expanded}"
+        ng-click="toggleExpanded(); $event.stopPropagation()"
+        data-tip="Bigger view"
+        aria-label="Toggle a larger, more readable view."
+      ><span ng-if="expanded" class="cip-ic-wrap"><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 8.5h-5v-5M11.5 8.5 17 3M3.5 11.5h5v5M8.5 11.5 3 17"/></svg></span><span ng-if="!expanded" class="cip-ic-wrap"><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M11.5 3.5h5v5M16.5 3.5l-5.5 5.5M8.5 16.5h-5v-5M3.5 16.5 9 11"/></svg></span></button>
+
+      <button
+        type="button"
+        class="cip-ctrl-btn cip-ctrl-primary"
+        data-cip-control="fullscreen"
+        ng-if="hudState === 'report' || (deathFadeActive && deathScreenDismissed)"
+        ng-class="{'cip-disabled': !fullscreen && realisticMode && (deathFadeActive ? !deathScreenDismissed : (unconsciousFadeVisible || shockBlackoutVisible))}"
+        ng-click="toggleFullscreen(); $event.stopPropagation()"
+        data-tip="{{ fullscreen ? 'Close report' : 'Open report' }}"
+        aria-label="{{ fullscreen ? 'Close the full report' : 'Open the full report' }}"
+      ><span ng-if="fullscreen" class="cip-ic-wrap"><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"/></svg></span><span ng-if="!fullscreen" class="cip-ic-wrap"><svg class="cip-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2.8h7l3.5 3.5v10.9H5z"/><path d="M12 2.8v3.5h3.5M7.8 10h5M7.8 13h5"/></svg></span><span>{{ fullscreen ? 'Close' : 'Report' }}</span></button>
+    </div>
+  </div>
+
+  </div>
+
+  <div class="cip-debug-panel cip-notranslate" ng-if="debugPanelVisible && debugSampleCount !== null">
+    <div class="cip-debug-line">
+      validation={{ debugValidationPassed ? 'PASSED' : 'REJECTED: ' + debugValidationReason }}
+      &middot; rawPeakG={{ debugRawPeakG.toFixed(2) }}
+      &middot; samples={{ debugSampleCount }}
+    </div>
+    <div class="cip-debug-line" ng-if="debugProvisionalBlackoutLatencyMs !== null">LATENCY {{ debugProvisionalBlackoutLatencyMs.toFixed(0) }}ms (impact start &rarr; INSTANT KNOCKOUT provisional blackout)</div>
+    <div class="cip-debug-line" ng-if="debugFirstInjuryLatencyMs !== null">LATENCY {{ debugFirstInjuryLatencyMs.toFixed(0) }}ms (impact start &rarr; FIRST injury shown)</div>
+
+    <div class="cip-debug-line cip-debug-line-sub" ng-if="debugFirstInjuryLatencyMs !== null">
+      breakdown: Lua capture {{ debugLuaCaptureMs !== null ? debugLuaCaptureMs.toFixed(0) + 'ms' : 'n/a' }}
+      + hop1 relay {{ debugHop1RelayMs !== null ? debugHop1RelayMs.toFixed(1) + 'ms' : 'n/a' }}
+      + pipeline compute {{ debugPipelineComputeMs !== null ? debugPipelineComputeMs.toFixed(0) + 'ms' : 'n/a' }}
+      + scheduled delay {{ debugFirstInjuryScheduleMs !== null ? debugFirstInjuryScheduleMs.toFixed(0) + 'ms' : 'n/a' }}
+      (hop2 GE&rarr;UI + digest/paint overhead not measured)
+    </div>
+    <div class="cip-debug-line" ng-if="debugLatencyMs !== null">LATENCY {{ debugLatencyMs.toFixed(0) }}ms (impact start &rarr; full report display)</div>
+    <div class="cip-debug-line" ng-if="false" ng-repeat="e in debugEvents track by e.index">EVENT {{ e.index }}: impactSide={{ e.impactSide }} deltaV={{ e.deltaVMs.toFixed(1) }}m/s</div>
+    <div class="cip-debug-line" ng-if="debugAisByRegion.length">
+      highest AIS:
+      <span ng-repeat="r in debugAisByRegion">{{ r.region }}={{ r.ais }}<span ng-if="!$last">, </span></span>
+    </div>
+    <div class="cip-debug-line" ng-if="debugIss !== null">ISS {{ debugIss }}<span ng-if="debugIssMajorTrauma"> (major trauma)</span> &middot; survival={{ debugSurvivalOutlook || '-' }}</div>
+  </div>
+</div>

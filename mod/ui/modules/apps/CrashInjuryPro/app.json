@@ -1,0 +1,22 @@
+{
+  "domElement": "<crash-injury-pro></crash-injury-pro>",
+  "name": "Crash Injury Pro",
+  "types": [
+    "ui.apps.categories.vehicle_info"
+  ],
+  "description": "Physics-based injury simulation for real crashes. Reads the impact forces on the driver and up to three passengers, scores the injuries and survival chances, and shows what got hurt on a body figure for every seat. Optional Realistic Mode adds blackouts and screen effects for knockouts and severe injuries. Ten languages.",
+  "css": {
+    "left": "200px",
+    "bottom": "10px",
+    "width": "380px",
+    "height": "380px",
+    "min-width": "310px",
+    "min-height": "260px"
+  },
+  "author": "Pityxa",
+  "version": "1.0",
+  "directive": "crashInjuryPro",
+  "category": "Dashboard",
+  "isAuxiliary": false,
+  "interactive": "yes"
+}

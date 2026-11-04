@@ -1,0 +1,22 @@
+{
+  "domElement": "<crash-injury-pro-stats></crash-injury-pro-stats>",
+  "name": "Crash Injury Stats Pro",
+  "types": [
+    "ui.apps.categories.vehicle_info"
+  ],
+  "description": "Crash and injury totals for the current play session.",
+  "css": {
+    "left": "0px",
+    "top": "0px",
+    "width": "260px",
+    "height": "340px",
+    "min-width": "200px",
+    "min-height": "180px"
+  },
+  "author": "Pityxa",
+  "version": "1.0",
+  "directive": "crashInjuryProStats",
+  "category": "Dashboard",
+  "isAuxiliary": false,
+  "interactive": "yes"
+}

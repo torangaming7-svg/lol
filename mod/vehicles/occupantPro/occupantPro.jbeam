@@ -1,0 +1,118 @@
+{
+"occupantPro": {
+    "information":{
+        "authors":"Pityxa",
+        "name":"Occupant Ragdoll",
+        "showSkeleton":true
+    },
+    "slotType" : "main",
+
+    "sounds": {
+        "impactMetal":false,
+        "impactPlastic":false,
+        "impactGeneric":false,
+        "breakGeneric":false,
+        "wind":false,
+        "scrapeMetal":false,
+        "scrapePlastic":false
+    },
+
+    "refNodes":[
+        ["ref:", "back:", "left:", "up:"],
+        ["pelvis_c", "pelvis_l", "pelvis_r", "chest_c"],
+    ],
+
+    "cameraExternal":{
+        "distance":4.0,
+        "distanceMin":1.5,
+        "offset":{"x":0, "y":0, "z":0.9},
+        "fov":65,
+    },
+
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        {"collision":true},
+        {"selfCollision":true},
+
+        {"nodeWeight":5.0},
+        ["pelvis_c",  0.00, -0.05, 0.92],
+        {"nodeWeight":4.0},
+        ["pelvis_l",  0.14,  0.06, 0.90],
+        ["pelvis_r", -0.14,  0.06, 0.90],
+
+        {"nodeWeight":8.0},
+        ["chest_c",  0.00, -0.08, 1.40],
+        {"nodeWeight":7.0},
+        ["chest_l",  0.20,  0.05, 1.38],
+        ["chest_r", -0.20,  0.05, 1.38],
+
+        {"nodeWeight":1.7},
+        ["head_top",   0.00,  0.00, 1.75],
+        {"nodeWeight":1.65},
+        ["head_front", 0.00,  0.09, 1.62],
+        ["head_back",  0.00, -0.07, 1.62],
+
+        {"nodeWeight":2.2},
+        ["arm_L_elbow",  0.30, 0.02, 1.05],
+        {"nodeWeight":1.3},
+        ["arm_L_hand",   0.32, 0.00, 0.72],
+
+        {"nodeWeight":2.2},
+        ["arm_R_elbow", -0.30, 0.02, 1.05],
+        {"nodeWeight":1.3},
+        ["arm_R_hand",  -0.32, 0.00, 0.72],
+
+        {"nodeWeight":7.0},
+        ["leg_L_knee",  0.15, 0.02, 0.47],
+        {"nodeWeight":4.0},
+        ["leg_L_foot",  0.15, 0.10, 0.05],
+
+        {"nodeWeight":7.0},
+        ["leg_R_knee", -0.15, 0.02, 0.47],
+        {"nodeWeight":4.0},
+        ["leg_R_foot", -0.15, 0.10, 0.05],
+    ],
+
+    "beams": [
+        ["id1:", "id2:"],
+        {"beamSpring":300000, "beamDamp":2000},
+
+        ["pelvis_c","pelvis_l"],
+        ["pelvis_c","pelvis_r"],
+        ["pelvis_l","pelvis_r"],
+
+        ["chest_c","chest_l"],
+        ["chest_c","chest_r"],
+        ["chest_l","chest_r"],
+
+        ["head_top","head_front"],
+        ["head_top","head_back"],
+        ["head_front","head_back"],
+
+        ["chest_l","arm_L_elbow"],
+        ["arm_L_elbow","arm_L_hand"],
+        ["chest_r","arm_R_elbow"],
+        ["arm_R_elbow","arm_R_hand"],
+        ["pelvis_l","leg_L_knee"],
+        ["leg_L_knee","leg_L_foot"],
+        ["pelvis_r","leg_R_knee"],
+        ["leg_R_knee","leg_R_foot"],
+
+        {"beamSpring":4000, "beamDamp":180},
+
+        ["pelvis_c","chest_c"],
+        ["pelvis_l","chest_l"],
+        ["pelvis_r","chest_r"],
+
+        ["chest_c","head_front"],
+        ["chest_c","head_back"],
+    ],
+
+    "triangles": [
+        ["id1:", "id2:", "id3:"],
+        ["pelvis_c","pelvis_l","pelvis_r"],
+        ["chest_c","chest_l","chest_r"],
+        ["head_top","head_front","head_back"],
+    ],
+}
+}
